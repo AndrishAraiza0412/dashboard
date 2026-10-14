@@ -61,6 +61,7 @@ async function audit(page: Page, path: string) {
   await page.waitForLoadState("load"); // not "networkidle": dev-server streaming keeps it from ever settling on slow runners
   console.log(`audit ${page.viewportSize()?.width}px ${path} ready in ${Date.now() - t0} ms`);
   expect(await page.locator("h1:visible").count(), `${path}: one visible h1`).toBe(1);
+  await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; }" });
   const { violations } = await new AxeBuilder({ page }).analyze();
   const bad = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`), `${path}: axe`).toEqual([]);

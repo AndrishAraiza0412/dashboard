@@ -11,10 +11,16 @@ import postgres from "postgres";
 config({ path: ".env.local" });
 
 const DEMO = { slug: "demo", name: "Demo" };
-const ADMIN_EMAIL = "admin@demo.test";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@demo.test"; // set SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD in .env.local to keep a fixed login across reseeds
 const VIEWER_EMAIL = "demo@demo.test";
 const VIEWER_PASSWORD = process.env.DEMO_VIEWER_PASSWORD ?? "choose-a-password"; // public by design: shown on the login page
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(9).toString("base64url");
+
+// The seed deletes the users it is about to recreate, so it may only ever touch demo addresses.
+if (!ADMIN_EMAIL.endsWith("@demo.test")) {
+  console.error(`SEED_ADMIN_EMAIL must end with @demo.test (got ${ADMIN_EMAIL}): the seed deletes and recreates this user.`);
+  process.exit(1);
+}
 
 const args = process.argv.slice(2);
 if (!args.includes("--yes") && !args.includes("--clean")) {

@@ -50,6 +50,7 @@ async function login(page: Page, user: { email: string }) {
 const badge = (page: Page, text: string) => page.locator("span.rounded-full", { hasText: text }).filter({ visible: true });
 
 const noSeriousViolations = async (page: Page) => {
+  await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; }" }); // axe must not sample colors mid-transition
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 };

@@ -52,6 +52,7 @@ async function login(page: Page, user: { email: string }) {
   await page.locator("main").first().waitFor(); // the post-login redirect has landed; navigating earlier aborts it
 }
 const noSeriousViolations = async (page: Page) => {
+  await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; }" }); // axe must not sample colors mid-transition
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 };

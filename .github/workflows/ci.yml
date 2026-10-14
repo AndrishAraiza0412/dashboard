@@ -1,9 +1,13 @@
 name: CI
 
+# Actions minutes are limited on the free plan: skip runs that cannot change behaviour (docs, notes, agent files).
+# Add "[skip ci]" to a commit message to skip a run by hand.
 on:
   pull_request:
+    paths-ignore: ["**.md", "docs/**", ".omc/**", ".agents/**", ".claude/**", ".env.example"]
   push:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**", ".omc/**", ".agents/**", ".claude/**", ".env.example"]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -19,6 +23,7 @@ jobs:
   # Static checks and the build: AC22 (typecheck, lint, no suppressions) and AC23 (no secret values in the client bundle).
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     env:
       # Throwaway values: the build only needs them to exist. AC23 greps the bundle for these exact strings.
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
@@ -45,7 +50,7 @@ jobs:
   # Database + browser tests against a throwaway local Supabase (Postgres + Auth) started in the runner.
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -73,6 +78,10 @@ jobs:
           node scripts/db-setup-role.ts
       - name: Integration tests (AC1-AC17)
         run: npm test
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - name: E2E tests (AC5, AC6, AC15, AC18, AC19)
         run: npx playwright test
