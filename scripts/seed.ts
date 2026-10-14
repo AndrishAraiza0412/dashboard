@@ -144,7 +144,8 @@ async function seed() {
   });
   console.log(`seeded org "${DEMO.slug}": ${products.length} products, ${customers.length} customers, ${confirmed} orders (${fulfilled} completed, ${cancelled} cancelled)`);
   console.log(`  viewer: ${VIEWER_EMAIL} / ${VIEWER_PASSWORD}`);
-  console.log(`  admin:  ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+  // A password supplied through the environment (CI secret) is never echoed back.
+  console.log(`  admin:  ${ADMIN_EMAIL} / ${process.env.SEED_ADMIN_PASSWORD ? "(from SEED_ADMIN_PASSWORD)" : ADMIN_PASSWORD}`);
 }
 
 try {

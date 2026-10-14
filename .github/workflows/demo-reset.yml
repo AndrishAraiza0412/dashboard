@@ -1,0 +1,26 @@
+name: Reset demo
+
+# Recreates the public demo organization every night, which also resets the shared viewer password and profile.
+# Enable by setting the repository variable DEMO_ENABLED=true.
+on:
+  schedule:
+    - cron: "37 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    if: vars.DEMO_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: node scripts/seed.ts --yes
+        env:
+          DATABASE_URL_MIGRATE: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
+          DEMO_VIEWER_PASSWORD: ${{ secrets.DEMO_VIEWER_PASSWORD }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}

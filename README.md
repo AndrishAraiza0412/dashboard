@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dashboard — ventas e inventario multi-cliente
 
-## Getting Started
+SaaS multi-organización (Ventas + Inventario, módulos activables por cliente). UI en español (es-MX). MVP sin cobros.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router, Cache Components) · TypeScript estricto · Supabase (Postgres + Auth) · Drizzle · Tailwind v4 · TanStack Table · Recharts · Zod · Vitest · Playwright + axe.
+
+## Cómo está pensado
+
+- **Aislamiento entre clientes en la base de datos.** La app se conecta como `app_rls` (sin `BYPASSRLS`) y cada petición corre dentro de `withOrg()`: `set local role authenticated` más las claims verificadas con `getClaims()`. Si una consulta se olvida de `withOrg`, devuelve 0 filas, no datos de otro cliente. No existe ninguna credencial con bypass en producción.
+- **Lo sensible vive en Postgres.** Stock, numeración y totales de pedidos, roles, invitaciones y administración de plataforma son funciones `security definer` o triggers; los grants son por columna.
+- **Autorización en cada frontera.** Cada página, Server Action y route handler llama a `requireMembership(slug, rol)`; el layout no es una frontera de seguridad.
+- Decisiones y riesgos completos: `.omc/plans/dashboard-saas-mvp.md`. Estado del proyecto: `.omc/handoff.md`.
+
+## Puesta en marcha
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local        # rellena con tu proyecto Supabase de desarrollo
+npm run db:migrate                # aplica drizzle/*.sql (DATABASE_URL_MIGRATE)
+node scripts/db-setup-role.ts     # fija la contraseña de app_rls desde DATABASE_URL
+node scripts/seed.ts --yes        # opcional: organización demo con datos de ejemplo
+npx next dev --webpack -p 3100
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Comandos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| | |
+|---|---|
+| `npm run lint` / `npm run typecheck` | ESLint / tipos |
+| `npm test` | Pruebas de integración contra Postgres real (aislamiento, permisos, stock, KPIs) |
+| `npx playwright test` | E2E con axe, 375 px y teclado (levanta su propio servidor) |
+| `npx next build --webpack` | Build de producción |
+| `node scripts/seed.ts --yes \| --clean` | Crear / quitar la organización demo |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Operación
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Despliegue y configuración: [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md)
+- Copias de seguridad: [`docs/runbooks/restore-backup.md`](docs/runbooks/restore-backup.md)
+- Borrar una organización: [`docs/runbooks/delete-org.md`](docs/runbooks/delete-org.md)

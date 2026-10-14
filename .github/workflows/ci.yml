@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  # Static checks and the build: AC22 (typecheck, lint, no suppressions) and AC23 (no secret values in the client bundle).
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # Throwaway values: the build only needs them to exist. AC23 greps the bundle for these exact strings.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+      DATABASE_URL: postgresql://app_rls.ci:ci-runtime-secret-7f3a@127.0.0.1:6543/postgres
+      DATABASE_URL_MIGRATE: postgresql://postgres.ci:ci-migrate-secret-9c1e@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: AC22 no ts-ignore / eslint-disable in src
+        run: "! grep -rEn '@ts-ignore|@ts-expect-error|eslint-disable' src"
+      - run: npx vitest run tests/unit
+      - run: npm run build -- --webpack
+      - name: AC23 no database credentials in the client bundle
+        run: |
+          for needle in ci-runtime-secret-7f3a ci-migrate-secret-9c1e; do
+            if grep -rqF -- "$needle" .next/static; then echo "::error::$needle leaked into .next/static"; exit 1; fi
+          done
+
+  # Database + browser tests against a throwaway local Supabase (Postgres + Auth) started in the runner.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: npm ci
+      - name: Start local Supabase
+        run: |
+          [ -f supabase/config.toml ] || supabase init
+          supabase start
+      - name: Wire the environment
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${PUBLISHABLE_KEY:-$ANON_KEY}"
+            echo "DATABASE_URL_MIGRATE=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+            echo "DATABASE_URL=postgresql://app_rls:ci-app-rls-pw@127.0.0.1:54322/postgres"
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3100"
+          } >> "$GITHUB_ENV"
+      - name: Migrate and create the app_rls login
+        run: |
+          npm run db:migrate
+          node scripts/db-setup-role.ts
+      - name: Integration tests (AC1-AC17)
+        run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: E2E tests (AC5, AC6, AC15, AC18, AC19)
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
