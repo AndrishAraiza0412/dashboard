@@ -14,13 +14,18 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Dump public + auth (without auth, users cannot sign in after a restore)
+      - name: Dump public, private, drizzle and auth
         env:
           DATABASE_URL_MIGRATE: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
         run: |
           # pg_dump must be at least the server's major version: use the Postgres 17 image.
+          # - private: the RLS helper functions every policy calls (without it a restore has no working policies)
+          # - auth: without it users cannot sign in after a restore
+          # - drizzle: the migration history, so db:migrate does not try to re-apply everything
+          # - privileges are kept on purpose: the per-column GRANTs are part of the security model
+          # Verified by restoring a dump into a blank database and running the integration suite against it (docs/runbooks/restore-backup.md).
           docker run --rm -e URL="$DATABASE_URL_MIGRATE" postgres:17 \
-            sh -c 'pg_dump "$URL" --format=custom --no-owner --no-privileges --schema=public --schema=auth' > backup.dump
+            sh -c 'pg_dump "$URL" --format=custom --no-owner --schema=public --schema=private --schema=drizzle --schema=auth' > backup.dump
           test "$(stat -c%s backup.dump)" -gt 10000
       - name: Encrypt with age (public key only; the private key stays offline)
         env:

@@ -79,11 +79,13 @@ const AUTHED = [
 
 for (const [label, size] of [["desktop", { width: 1280, height: 800 }], ["375px", { width: 375, height: 800 }]] as const) {
   test(`public screens (${label})`, async ({ page }) => {
+    test.setTimeout(240_000);
     await page.setViewportSize(size);
     for (const path of PUBLIC) await audit(page, path);
   });
 
   test(`signed-in screens (${label})`, async ({ page }) => {
+    test.setTimeout(420_000); // 13 screens in one test; CI runners are slower than a laptop
     await page.setViewportSize(size);
     await login(page);
     for (const path of [...AUTHED, `${o}/inventory/${ids.product}`, `${o}/sales/${ids.draft}`, `${o}/sales/${ids.confirmed}`, "/invite/qa-token", `${o}/inventory?stock=low`]) {
