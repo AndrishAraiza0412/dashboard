@@ -1,0 +1,1 @@
+CREATE INDEX "products_org_name_idx" ON "products" USING btree ("org_id","name");
