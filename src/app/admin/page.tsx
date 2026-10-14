@@ -4,14 +4,15 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Field } from "@/components/ui/input";
+import { CurrencySelect, TimezoneSelect } from "@/components/ui/option-selects";
 import { PageHeader } from "@/components/ui/page-header";
 import { createOrg, setModules, setSuspended } from "@/server/actions/admin";
-import { listAllOrgs, requirePlatformAdmin } from "@/server/admin";
-import { withUser } from "@/server/db/with-org";
+import { loadAdminOrgs } from "@/server/admin";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton rows={4} />}>
       <Content />
     </Suspense>
   );
@@ -27,10 +28,9 @@ function Check({ name, label, defaultChecked }: { name: string; label: string; d
 }
 
 async function Content() {
-  await requirePlatformAdmin();
-  const orgs = await withUser((tx) => listAllOrgs(tx));
+  const orgs = await loadAdminOrgs();
   return (
-    <>
+    <div className="fade-in">
       <PageHeader title="Organizaciones" description={`${orgs.length} en la plataforma`} />
 
       <section aria-labelledby="new-org" className="mb-10 max-w-xl">
@@ -39,8 +39,8 @@ async function Content() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="org-name" name="name" label="Nombre" required maxLength={80} />
             <Field id="org-slug" name="slug" label="Identificador (URL)" required maxLength={40} />
-            <Field id="org-currency" name="currency" label="Moneda" defaultValue="MXN" required maxLength={3} />
-            <Field id="org-timezone" name="timezone" label="Zona horaria" defaultValue="America/Mexico_City" required />
+            <CurrencySelect id="org-currency" defaultValue="MXN" />
+            <TimezoneSelect id="org-timezone" defaultValue="America/Mexico_City" />
           </div>
           <Field id="org-email" name="email" label="Correo de su primer administrador" type="email" autoComplete="off" spellCheck={false} required />
         </ActionForm>
@@ -74,6 +74,6 @@ async function Content() {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 }

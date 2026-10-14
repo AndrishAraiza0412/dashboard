@@ -1,8 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import type { OrgContext, Role } from "@/server/db/with-org";
+
+/** Dot that appears (after 100 ms, so quick navigations never flash it) while the clicked link's page loads. */
+function Pending() {
+  const { pending } = useLinkStatus();
+  return <span aria-hidden="true" className={`ml-2 inline-block size-1.5 rounded-full bg-primary-strong transition-opacity duration-150 ${pending ? "animate-pulse opacity-100 delay-100" : "opacity-0"}`} />;
+}
 
 type NavItem = { href: string; label: string; module?: "inventory" | "sales"; minRole?: Role };
 
@@ -11,6 +17,7 @@ const NAV: NavItem[] = [
   { href: "", label: "Resumen" },
   { href: "/inventory", label: "Inventario", module: "inventory" },
   { href: "/sales", label: "Ventas", module: "sales" },
+  { href: "/activity", label: "Actividad", minRole: "admin" },
   { href: "/settings", label: "Ajustes" },
 ];
 const RANK: Record<Role, number> = { viewer: 0, member: 1, admin: 2 };
@@ -53,6 +60,7 @@ export function Sidebar({ ctx, orgs }: { ctx: OrgContext; orgs: { slug: string; 
               className="whitespace-nowrap rounded-md px-3 py-2 text-[14px] font-medium text-body hover:bg-surface-card aria-[current=page]:bg-surface-card aria-[current=page]:text-ink"
             >
               {i.label}
+              <Pending />
             </Link>
           );
         })}

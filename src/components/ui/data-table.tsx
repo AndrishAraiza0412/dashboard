@@ -51,7 +51,7 @@ export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T,
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-t border-hairline-soft hover:bg-surface-soft/60">
+            <tr key={row.id} className="border-t border-hairline-soft transition-colors duration-150 hover:bg-surface-soft/60">
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className={cn("px-4 py-3 text-ink", (cell.column.columnDef.meta as Meta)?.nowrap && "whitespace-nowrap", (cell.column.columnDef.meta as Meta)?.numeric && "tabular whitespace-nowrap text-right")}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

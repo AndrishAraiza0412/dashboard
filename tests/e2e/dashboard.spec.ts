@@ -94,6 +94,41 @@ test("KPIs, range presets and charts for an org with sales and inventory", async
   await expect(page.getByText("Por semana (inicia el lunes)")).toBeVisible();
 });
 
+test("richer views: comparison, custom range, extra cards and the admin activity feed", async ({ page }) => {
+  await login(page);
+  await page.goto(`/o/${orgs.full.slug}`);
+  for (const heading of ["Pedidos por estado", "Ventas por día de la semana", "Mejores clientes", "Últimos pedidos", "Actividad reciente"]) {
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  }
+  await expect(page.getByText("Margen estimado", { exact: true })).toBeVisible();
+  await expect(page.getByText("Valor del inventario", { exact: true })).toBeVisible();
+  await noSeriousViolations(page);
+
+  // The comparison line is on by default and can be switched off (state lives in the URL)
+  const legend = page.getByText("Periodo anterior", { exact: true }).filter({ visible: true });
+  await expect(legend).toHaveCount(1);
+  await page.getByRole("link", { name: "Ocultar comparación" }).click();
+  await expect(page).toHaveURL(/compare=0/);
+  await expect(legend).toHaveCount(0);
+  await page.getByRole("link", { name: "Comparar con el periodo anterior" }).click();
+  await expect(legend).toHaveCount(1);
+
+  // Custom range: the last 3 local days include the 1- and 2-day-old orders but not the 40-day-old one
+  const local = (offset: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date(Date.now() + offset * 86_400_000));
+  await page.getByText("Personalizado", { exact: true }).click();
+  await page.locator('form input[name="from"]:visible').fill(local(-3));
+  await page.locator('form input[name="to"]:visible').fill(local(0));
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await expect(page).toHaveURL(/range=custom/);
+  const tile = (label: string) => page.locator("div.rounded-lg", { has: page.getByText(label, { exact: true }) }).filter({ visible: true }).first();
+  await expect(tile("Pedidos")).toContainText("2");
+  await expect(tile("Ingresos")).toContainText("$500.00");
+  // Garbage in the URL falls back to the default period instead of failing
+  await page.goto(`/o/${orgs.full.slug}?range=custom&from=nope&to=2026-99-99`);
+  await expect(page.getByRole("heading", { name: orgs.full.name })).toBeVisible();
+  await expect(tile("Pedidos")).toContainText("2");
+});
+
 test("an org with no sales shows empty states; inventory-only hides sales cards", async ({ page }) => {
   await login(page);
   await page.goto(`/o/${orgs.empty.slug}`);

@@ -3,30 +3,37 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Field } from "@/components/ui/input";
+import { Field, SelectField } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { createCustomer, setCustomerActive, updateCustomer } from "@/server/actions/sales";
-import { listCustomers } from "@/server/sales";
-import { requireMembership, requireModule, withOrg } from "@/server/db/with-org";
+import { CUSTOMER_STATUSES, listCustomers, type CustomerStatus } from "@/server/sales";
+import { choice, one } from "@/lib/params";
+import Link from "next/link";
+import { loadOrg, requireModule } from "@/server/db/with-org";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Clientes" };
 
-export default function CustomersPage({ params }: PageProps<"/o/[orgSlug]/sales/customers">) {
+export default function CustomersPage({ params, searchParams }: PageProps<"/o/[orgSlug]/sales/customers">) {
   return (
-    <Suspense fallback={null}>
-      <Content params={params} />
+    <Suspense fallback={<PageSkeleton />}>
+      <Content params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/customers">, "params">) {
+async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]/sales/customers">, "params" | "searchParams">) {
   const { orgSlug } = await params;
-  const ctx = await requireMembership(orgSlug);
-  await requireModule(ctx, "sales");
-  const rows = await withOrg(orgSlug, (tx) => listCustomers(tx, ctx.orgId));
+  const sp = await searchParams;
+  const q = one(sp.q)?.slice(0, 80);
+  const status = choice(sp.status, Object.keys(CUSTOMER_STATUSES) as CustomerStatus[], "all");
+  const { ctx, data: rows } = await loadOrg(orgSlug, "viewer", async (tx, ctx) => {
+    await requireModule(ctx, "sales");
+    return listCustomers(tx, ctx.orgId, { q, status });
+  });
   const canEdit = ctx.role !== "viewer";
   return (
-    <>
+    <div className="fade-in">
       <PageHeader title="Clientes" description="Las personas o empresas a las que vendes." />
       {canEdit && (
         <section aria-labelledby="new-customer" className="mb-8 max-w-xl">
@@ -40,8 +47,19 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/customers"
           </ActionForm>
         </section>
       )}
+      <form method="get" role="search" className="mb-4 grid gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end">
+        <Field id="q" name="q" label="Buscar por nombre, correo o teléfono" type="search" defaultValue={q} />
+        <SelectField id="status" name="status" label="Estado" defaultValue={status}>
+          {Object.entries(CUSTOMER_STATUSES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </SelectField>
+        <Button type="submit">Filtrar</Button>
+      </form>
       {rows.length === 0 ? (
-        <EmptyState title="Aún no hay clientes" description="Puedes crear pedidos sin cliente, pero registrarlos ayuda a dar seguimiento." />
+        <EmptyState
+          title={q || status !== "all" ? "Sin resultados" : "Aún no hay clientes"}
+          description={q || status !== "all" ? "Prueba con otra búsqueda." : "Puedes crear pedidos sin cliente, pero registrarlos ayuda a dar seguimiento."}
+          action={q || status !== "all" ? <Link href={`/o/${orgSlug}/sales/customers`} className="text-sm font-medium text-primary-strong underline">Quitar filtros</Link> : undefined}
+        />
       ) : (
         <ul className="divide-y divide-hairline-soft rounded-lg border border-hairline">
           {rows.map((c) => (
@@ -67,6 +85,6 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/customers"
           ))}
         </ul>
       )}
-    </>
+    </div>
   );
 }

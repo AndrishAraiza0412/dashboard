@@ -28,12 +28,13 @@ export function runAsUser<T>(
     throw new Error("runAsUser: claims are not from an authenticated user");
   }
   return db.transaction(async (tx) => {
-    // Bound parameter, never string-built SQL.
-    await tx.execute(sql`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`);
-    if (requestId) {
-      await tx.execute(sql`select set_config('app.request_id', ${requestId}, true)`);
-    }
-    await tx.execute(sql`set local role authenticated`);
+    // One statement, one round trip (each trip to the hosted database costs ~70 ms). Bound parameters, never
+    // string-built SQL. set_config('role', ..., true) is SET LOCAL ROLE: it checks membership the same way.
+    await tx.execute(
+      sql`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true),
+                 set_config('app.request_id', ${requestId ?? ""}, true),
+                 set_config('role', 'authenticated', true)`,
+    );
     return fn(tx);
   });
 }

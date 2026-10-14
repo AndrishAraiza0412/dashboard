@@ -19,7 +19,7 @@ export function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-md px-5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-md px-5 text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100",
         variants[variant],
         className,
       )}

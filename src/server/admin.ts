@@ -27,3 +27,11 @@ export async function listAllOrgs(tx: Tx): Promise<AdminOrg[]> {
   }[];
   return rows.map((r) => ({ id: r.id, name: r.name, slug: r.slug, currency: r.currency, timezone: r.timezone, modules: r.enabled_modules, suspended: r.suspended_at !== null, isDemo: r.is_demo }));
 }
+
+/** Platform-admin check and the organization list in one transaction (404 for anyone else). */
+export const loadAdminOrgs = () =>
+  withUser(async (tx) => {
+    const ok = ((await tx.execute(sql`select private.is_platform_admin() as ok`)) as unknown as { ok: boolean }[])[0].ok;
+    if (!ok) notFound();
+    return listAllOrgs(tx);
+  });

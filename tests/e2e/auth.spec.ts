@@ -145,6 +145,7 @@ test("a user without invitation sees the empty state, not an error", async ({ pa
 });
 
 const secure = async (page: Page) => {
+  await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; }" }); // axe must not sample colors mid-animation
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   return r.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes[0].target.join(" ")}`);
 };

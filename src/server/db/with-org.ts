@@ -35,43 +35,64 @@ export type OrgContext = {
   userId: string;
 };
 
-/**
- * Authorization for every page, Server Action and route handler under /o/[orgSlug].
- * The org id comes from the verified membership, never from client input. No membership
- * (or a suspended org) is a 404 so existence is not revealed; too low a role throws.
- */
-export const requireMembership = cache(async (slug: string, minRole: Role = "viewer"): Promise<OrgContext> => {
-  const [row] = await withUser((tx, claims) =>
-    tx
-      .select({
-        orgId: organizations.id,
-        slug: organizations.slug,
-        name: organizations.name,
-        currency: organizations.currency,
-        timezone: organizations.timezone,
-        modules: organizations.enabledModules,
-        role: memberships.role,
-        userId: memberships.userId,
-      })
-      .from(organizations)
-      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
-      .where(and(eq(organizations.slug, slug), eq(memberships.userId, claims.sub)))
-      .limit(1),
-  );
+const membershipIn = async (tx: Tx, userId: string, slug: string, minRole: Role): Promise<OrgContext> => {
+  const [row] = await tx
+    .select({
+      orgId: organizations.id,
+      slug: organizations.slug,
+      name: organizations.name,
+      currency: organizations.currency,
+      timezone: organizations.timezone,
+      modules: organizations.enabledModules,
+      role: memberships.role,
+      userId: memberships.userId,
+    })
+    .from(organizations)
+    .innerJoin(memberships, eq(memberships.orgId, organizations.id))
+    .where(and(eq(organizations.slug, slug), eq(memberships.userId, userId)))
+    .limit(1);
   if (!row) notFound();
   if (RANK[row.role] < RANK[minRole]) throw new ForbiddenError();
   return row;
-});
+};
 
-/** Runs `fn` inside a transaction for an organization the caller belongs to. */
-export async function withOrg<T>(
+/**
+ * Authorization for Server Actions and route handlers under /o/[orgSlug] (pages use loadOrg, which does the same
+ * check inside the page's own transaction). The org id comes from the verified membership, never from client
+ * input. No membership (or a suspended org) is a 404 so existence is not revealed; too low a role throws.
+ */
+export const requireMembership = cache(
+  (slug: string, minRole: Role = "viewer"): Promise<OrgContext> => withUser((tx, claims) => membershipIn(tx, claims.sub, slug, minRole)),
+);
+
+/**
+ * For pages: ONE transaction that checks the membership and then runs `fn` with the verified context, instead of a
+ * membership transaction followed by a data transaction (each costs several round trips to the database).
+ */
+export async function loadOrg<T>(
   slug: string,
+  minRole: Role,
   fn: (tx: Tx, ctx: OrgContext) => Promise<T>,
-  minRole: Role = "viewer",
-): Promise<T> {
-  const ctx = await requireMembership(slug, minRole);
-  return withUser((tx) => fn(tx, ctx));
+): Promise<{ ctx: OrgContext; data: T }> {
+  return withUser(async (tx, claims) => {
+    const ctx = await membershipIn(tx, claims.sub, slug, minRole);
+    return { ctx, data: await fn(tx, ctx) };
+  });
 }
+
+/** Everything the org layout needs, in one transaction (membership + the user's organizations). */
+export const getShell = cache((slug: string) =>
+  withUser(async (tx, claims) => {
+    const ctx = await membershipIn(tx, claims.sub, slug, "viewer");
+    const orgs = await tx
+      .select({ slug: organizations.slug, name: organizations.name })
+      .from(organizations)
+      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
+      .where(eq(memberships.userId, claims.sub))
+      .orderBy(organizations.name);
+    return { ctx, orgs };
+  }),
+);
 
 /** For Server Actions of a module the organization has switched off. */
 export async function requireModule(ctx: OrgContext, module: "inventory" | "sales") {

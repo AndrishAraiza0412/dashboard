@@ -67,9 +67,14 @@ test("org admin: edits the org, invites and revokes, changes roles, keeps one ad
   await page.getByRole("textbox", { name: "Nombre", exact: true }).fill(`${org.name} 2`);
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Cambios guardados." })).toBeVisible();
-  await page.getByRole("combobox", { name: "Moneda (código)" }).fill("ZZZ");
+  // Currency and time zone are choices, not free text: named options, the common ones first
+  await expect(page.locator('#currency option[value="MXN"]')).toHaveText("MXN — Peso mexicano");
+  await expect(page.locator('#currency option[value="EUR"]')).toHaveText(/Euro/);
+  await expect(page.locator('#timezone option[value="America/Mexico_City"]')).toContainText("Mexico City (UTC");
+  await page.getByRole("combobox", { name: "Moneda", exact: true }).selectOption("USD");
+  await page.getByRole("combobox", { name: "Zona horaria", exact: true }).selectOption("America/Bogota");
   await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Moneda no válida" })).toBeVisible();
+  await expect.poll(async () => (await sql`select currency, timezone from organizations where id = ${org.id}`)[0]).toEqual({ currency: "USD", timezone: "America/Bogota" });
 
   const invitee = `guest-${run}@test.local`;
   await page.getByRole("textbox", { name: "Correo" }).fill(invitee);
@@ -92,6 +97,16 @@ test("org admin: edits the org, invites and revokes, changes roles, keeps one ad
   await workerRow.getByRole("button", { name: "Quitar" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Quitar" }).click();
   await expect(page.getByText(users.worker.email, { exact: true })).toHaveCount(0);
+
+  // The audit trail shows who changed what, filterable by kind of record
+  await page.getByRole("link", { name: "Actividad" }).click();
+  await expect(page.getByRole("heading", { name: "Actividad" })).toBeVisible();
+  await expect(page.getByText(/modificó organización/).first()).toBeVisible();
+  await expect(page.getByText(/cambió .*moneda/).first()).toBeVisible();
+  await page.getByRole("combobox", { name: "Qué" }).selectOption("memberships");
+  await page.getByRole("button", { name: "Filtrar" }).click();
+  await expect(page).toHaveURL(/entity=memberships/);
+  await expect(page.getByText(/eliminó miembro/).first()).toBeVisible();
   await sql`insert into memberships (org_id, user_id, role) values (${org.id}, ${users.worker.id}, 'viewer')`;
 });
 
@@ -102,6 +117,10 @@ test("non-admin members see the roster only and cannot reach /admin", async ({ p
   await expect(page.getByRole("heading", { name: "Organización" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Invitar a alguien" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Salir" })).toBeVisible();
+  // Members cannot see the audit trail: no menu entry, and the page itself refuses
+  await expect(page.getByRole("link", { name: "Actividad" })).toHaveCount(0);
+  await page.goto(`/o/${org.slug}/activity`);
+  await expect(page.getByRole("heading", { name: "No tienes permiso" })).toBeVisible();
   await page.goto("/admin");
   await notFound(page);
 });

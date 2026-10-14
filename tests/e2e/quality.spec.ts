@@ -78,7 +78,7 @@ async function audit(page: Page, path: string) {
 const PUBLIC = ["/login", "/forgot-password", "/reset-password", "/invite/qa-token"];
 const o = `/o/${org.slug}`;
 const AUTHED = [
-  o, `${o}/inventory`, `${o}/inventory/new`, `${o}/inventory/categories`, `${o}/sales`, `${o}/sales/customers`, `${o}/settings`, "/admin",
+  o, `${o}/inventory`, `${o}/inventory/new`, `${o}/inventory/categories`, `${o}/sales`, `${o}/sales/customers`, `${o}/settings`, `${o}/activity`, "/admin",
 ];
 
 for (const [label, size] of [["desktop", { width: 1280, height: 800 }], ["375px", { width: 375, height: 800 }]] as const) {
@@ -92,7 +92,9 @@ for (const [label, size] of [["desktop", { width: 1280, height: 800 }], ["375px"
     test.setTimeout(420_000); // 13 screens in one test; CI runners are slower than a laptop
     await page.setViewportSize(size);
     await login(page);
-    for (const path of [...AUTHED, `${o}/inventory/${ids.product}`, `${o}/sales/${ids.draft}`, `${o}/sales/${ids.confirmed}`, "/invite/qa-token", `${o}/inventory?stock=low`]) {
+    for (const path of [...AUTHED, `${o}/inventory/${ids.product}`, `${o}/sales/${ids.draft}`, `${o}/sales/${ids.confirmed}`, "/invite/qa-token", `${o}/inventory?stock=low`,
+      `${o}/inventory?sort=price_desc&status=active&size=50`, `${o}/sales?sort=total_desc&status=confirmed&size=50`, `${o}/sales/customers?status=active&q=cli`,
+      `${o}?range=custom&from=2026-01-01&to=2026-01-31`, `${o}?range=year&compare=0`, `${o}/activity?entity=products&size=50`]) {
       await audit(page, path);
     }
   });

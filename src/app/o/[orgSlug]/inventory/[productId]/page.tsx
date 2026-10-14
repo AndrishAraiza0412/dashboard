@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { dateTime } from "@/lib/format";
 import { adjustStock, setProductActive, updateProduct } from "@/server/actions/inventory";
 import { getProduct, listCategories, listMovements } from "@/server/inventory";
-import { requireMembership, requireModule, withOrg } from "@/server/db/with-org";
+import { loadOrg, requireModule } from "@/server/db/with-org";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Producto" };
 
@@ -19,7 +20,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ProductPage({ params }: PageProps<"/o/[orgSlug]/inventory/[productId]">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton rows={5} />}>
       <Content params={params} />
     </Suspense>
   );
@@ -27,20 +28,20 @@ export default function ProductPage({ params }: PageProps<"/o/[orgSlug]/inventor
 
 async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/inventory/[productId]">, "params">) {
   const { orgSlug, productId } = await params;
-  const ctx = await requireMembership(orgSlug);
-  await requireModule(ctx, "inventory");
   if (!UUID.test(productId)) notFound();
 
-  const [product, cats, movements] = await withOrg(orgSlug, async (tx) => [
-    await getProduct(tx, ctx.orgId, productId),
-    await listCategories(tx, ctx.orgId),
-    await listMovements(tx, ctx.orgId, productId),
-  ] as const);
+  const {
+    ctx,
+    data: [product, cats, movements],
+  } = await loadOrg(orgSlug, "viewer", async (tx, ctx) => {
+    await requireModule(ctx, "inventory");
+    return Promise.all([getProduct(tx, ctx.orgId, productId), listCategories(tx, ctx.orgId), listMovements(tx, ctx.orgId, productId)]);
+  });
   if (!product) notFound();
   const canEdit = ctx.role !== "viewer";
 
   return (
-    <>
+    <div className="fade-in">
       <PageHeader
         title={product.name}
         description={`SKU ${product.sku} · ${product.stockQty} en stock`}
@@ -101,6 +102,6 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/inventory/[produ
           )}
         </section>
       </div>
-    </>
+    </div>
   );
 }

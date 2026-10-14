@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Field, SelectField } from "@/components/ui/input";
+import { CurrencySelect, TimezoneSelect } from "@/components/ui/option-selects";
 import { PageHeader } from "@/components/ui/page-header";
 import { dateTime } from "@/lib/format";
 import { inviteMember } from "@/server/actions/invitations";
 import { changeRole, leaveOrg, removeMember, revokeInvitation, updateOrg } from "@/server/actions/settings";
 import { listMembers, listPendingInvitations } from "@/server/settings";
-import { requireMembership, withOrg } from "@/server/db/with-org";
+import { loadOrg } from "@/server/db/with-org";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Ajustes" };
 
@@ -17,7 +19,7 @@ const ROLES = { admin: "Administrador", member: "Miembro", viewer: "Solo lectura
 
 export default function SettingsPage({ params }: PageProps<"/o/[orgSlug]/settings">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton rows={4} />}>
       <Content params={params} />
     </Suspense>
   );
@@ -25,15 +27,17 @@ export default function SettingsPage({ params }: PageProps<"/o/[orgSlug]/setting
 
 async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/settings">, "params">) {
   const { orgSlug } = await params;
-  const ctx = await requireMembership(orgSlug);
+  const {
+    ctx,
+    data: { members, pending },
+  } = await loadOrg(orgSlug, "viewer", async (tx, ctx) => {
+    const [members, pending] = await Promise.all([listMembers(tx, ctx.orgId), ctx.role === "admin" ? listPendingInvitations(tx, ctx.orgId) : Promise.resolve([])]);
+    return { members, pending };
+  });
   const isAdmin = ctx.role === "admin";
-  const { members, pending } = await withOrg(orgSlug, async (tx) => ({
-    members: await listMembers(tx, ctx.orgId),
-    pending: isAdmin ? await listPendingInvitations(tx, ctx.orgId) : [],
-  }));
 
   return (
-    <>
+    <div className="fade-in">
       <PageHeader title="Ajustes" description={ctx.name} />
       <div className="space-y-12">
         {isAdmin && (
@@ -42,11 +46,9 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/settings">, "par
             <ActionForm action={updateOrg.bind(null, orgSlug)} submit="Guardar cambios">
               <Field id="name" name="name" label="Nombre" defaultValue={ctx.name} required maxLength={80} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="currency" name="currency" label="Moneda (código)" defaultValue={ctx.currency} list="currencies" required maxLength={3} />
-                <Field id="timezone" name="timezone" label="Zona horaria" defaultValue={ctx.timezone} list="timezones" required />
+                <CurrencySelect id="currency" defaultValue={ctx.currency} />
+                <TimezoneSelect id="timezone" defaultValue={ctx.timezone} />
               </div>
-              <datalist id="currencies">{Intl.supportedValuesOf("currency").map((c) => <option key={c} value={c} />)}</datalist>
-              <datalist id="timezones">{Intl.supportedValuesOf("timeZone").map((z) => <option key={z} value={z} />)}</datalist>
             </ActionForm>
           </section>
         )}
@@ -116,6 +118,6 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/settings">, "par
           </section>
         )}
       </div>
-    </>
+    </div>
   );
 }

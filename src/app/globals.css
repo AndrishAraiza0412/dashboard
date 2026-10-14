@@ -29,6 +29,37 @@ h1, h2, h3 {
   text-wrap: balance;
 }
 
+/* Motion: strong ease-out, short durations, transform + opacity only. The reduced-motion rule below shrinks all of it. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.96); }
+}
+
+/* A page's content, once it has loaded (view changes happen tens of times a day: subtle and fast). */
+.fade-in { animation: fade-up 180ms var(--ease-out) both; }
+
+/* Dashboard tiles: a short cascade, 40 ms apart. */
+.stagger > * { animation: fade-up 220ms var(--ease-out) both; }
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+
+/* Form feedback appears instead of popping in. */
+[role="alert"], [role="status"]:not([aria-busy]) { animation: fade 160ms var(--ease-out) both; }
+
+/* Modal dialogs are centered, so they scale from the middle. */
+dialog[open] { animation: dialog-in 180ms var(--ease-out); }
+dialog[open]::backdrop { animation: fade 180ms var(--ease-out); }
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }

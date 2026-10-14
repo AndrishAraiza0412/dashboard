@@ -6,13 +6,14 @@ import { Field } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { createCategory, deleteCategory, renameCategory } from "@/server/actions/inventory";
 import { listCategories } from "@/server/inventory";
-import { requireMembership, requireModule, withOrg } from "@/server/db/with-org";
+import { loadOrg, requireModule } from "@/server/db/with-org";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Categorías" };
 
 export default function CategoriesPage({ params }: PageProps<"/o/[orgSlug]/inventory/categories">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton rows={5} />}>
       <Content params={params} />
     </Suspense>
   );
@@ -20,12 +21,13 @@ export default function CategoriesPage({ params }: PageProps<"/o/[orgSlug]/inven
 
 async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/inventory/categories">, "params">) {
   const { orgSlug } = await params;
-  const ctx = await requireMembership(orgSlug);
-  await requireModule(ctx, "inventory");
-  const cats = await withOrg(orgSlug, (tx) => listCategories(tx, ctx.orgId));
+  const { ctx, data: cats } = await loadOrg(orgSlug, "viewer", async (tx, ctx) => {
+    await requireModule(ctx, "inventory");
+    return listCategories(tx, ctx.orgId);
+  });
   const canEdit = ctx.role !== "viewer";
   return (
-    <>
+    <div className="fade-in">
       <PageHeader title="Categorías" description="Agrupa tus productos." />
       {canEdit && (
         <ActionForm action={createCategory.bind(null, orgSlug)} submit="Añadir categoría" resetOnSuccess className="mb-8 max-w-sm">
@@ -52,6 +54,6 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/inventory/catego
           ))}
         </ul>
       )}
-    </>
+    </div>
   );
 }

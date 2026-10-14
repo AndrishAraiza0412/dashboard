@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { dateTime, money } from "@/lib/format";
 import { addLine, cancelOrder, confirmOrder, fulfillOrder, removeLine, updateLine, updateOrderHeader } from "@/server/actions/sales";
 import { getOrder, listActiveProducts, listCustomers, STATUSES, TONES } from "@/server/sales";
-import { requireMembership, requireModule, withOrg } from "@/server/db/with-org";
+import { loadOrg, requireModule } from "@/server/db/with-org";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Pedido" };
 
@@ -18,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function OrderPage({ params }: PageProps<"/o/[orgSlug]/sales/[orderId]">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton rows={4} />}>
       <Content params={params} />
     </Suspense>
   );
@@ -26,15 +27,13 @@ export default function OrderPage({ params }: PageProps<"/o/[orgSlug]/sales/[ord
 
 async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/[orderId]">, "params">) {
   const { orgSlug, orderId } = await params;
-  const ctx = await requireMembership(orgSlug);
-  await requireModule(ctx, "sales");
   if (!UUID.test(orderId)) notFound();
 
-  const data = await withOrg(orgSlug, async (tx) => ({
-    found: await getOrder(tx, ctx.orgId, orderId),
-    customers: await listCustomers(tx, ctx.orgId),
-    products: await listActiveProducts(tx, ctx.orgId),
-  }));
+  const { ctx, data } = await loadOrg(orgSlug, "viewer", async (tx, ctx) => {
+    await requireModule(ctx, "sales");
+    const [found, customers, products] = await Promise.all([getOrder(tx, ctx.orgId, orderId), listCustomers(tx, ctx.orgId), listActiveProducts(tx, ctx.orgId)]);
+    return { found, customers, products };
+  });
   if (!data.found) notFound();
   const { order, lines } = data.found;
   const draft = order.status === "draft";
@@ -42,7 +41,7 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/[orderId]"
   const customerName = data.customers.find((c) => c.id === order.customerId)?.name;
 
   return (
-    <>
+    <div className="fade-in">
       <PageHeader
         title={order.number ? `Pedido #${order.number}` : "Pedido en borrador"}
         description={`${dateTime(order.createdAt, ctx.timezone)}${customerName ? ` · ${customerName}` : ""}`}
@@ -135,6 +134,6 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/[orderId]"
           )}
         </aside>
       </div>
-    </>
+    </div>
   );
 }

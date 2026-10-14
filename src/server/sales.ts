@@ -1,31 +1,70 @@
 import "server-only";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { customers, orderItems, orders, products } from "@/db/schema";
 import type { Tx } from "@/server/db/rls";
 
-export const ORDERS_PAGE = 20;
 export const STATUSES = { draft: "Borrador", confirmed: "Confirmado", fulfilled: "Completado", cancelled: "Cancelado" } as const;
 export const TONES = { draft: "neutral", confirmed: "warning", fulfilled: "success", cancelled: "error" } as const;
 export type Status = keyof typeof STATUSES;
 
-export async function listOrders(tx: Tx, orgId: string, f: { status?: Status; page: number }) {
-  const where = and(eq(orders.orgId, orgId), f.status ? eq(orders.status, f.status) : undefined);
-  const [rows, [{ total }]] = await Promise.all([
-    tx
-      .select({ id: orders.id, number: orders.number, status: orders.status, total: orders.total, createdAt: orders.createdAt, customer: customers.name })
+export const ORDER_SORTS = {
+  date_desc: "Más recientes",
+  date_asc: "Más antiguos",
+  total_desc: "Total (mayor a menor)",
+  total_asc: "Total (menor a mayor)",
+} as const;
+export type OrderSort = keyof typeof ORDER_SORTS;
+const ORDER_BY = {
+  date_desc: desc(orders.createdAt),
+  date_asc: asc(orders.createdAt),
+  total_desc: desc(orders.total),
+  total_asc: asc(orders.total),
+} as const;
+
+/** `from`/`to` are local days (YYYY-MM-DD) in the organization's time zone, inclusive. */
+export async function listOrders(
+  tx: Tx,
+  orgId: string,
+  f: { status?: Status; customerId?: string; from?: string; to?: string; sort?: OrderSort; timezone: string; page: number; size: number },
+) {
+  const midnight = (d: string, plusDays = 0) => sql`((${d}::date + ${plusDays}::int)::timestamp at time zone ${f.timezone})`;
+  const where = and(
+    eq(orders.orgId, orgId),
+    f.status ? eq(orders.status, f.status) : undefined,
+    f.customerId ? eq(orders.customerId, f.customerId) : undefined,
+    f.from ? sql`${orders.createdAt} >= ${midnight(f.from)}` : undefined,
+    f.to ? sql`${orders.createdAt} < ${midnight(f.to, 1)}` : undefined,
+  );
+  const rows = await tx
+      .select({ rowCount: sql<number>`(count(*) over())::int`, id: orders.id, number: orders.number, status: orders.status, total: orders.total, createdAt: orders.createdAt, customer: customers.name })
       .from(orders)
       .leftJoin(customers, and(eq(customers.orgId, orders.orgId), eq(customers.id, orders.customerId)))
       .where(where)
-      .orderBy(desc(orders.createdAt), asc(orders.id))
-      .limit(ORDERS_PAGE)
-      .offset((f.page - 1) * ORDERS_PAGE),
-    tx.select({ total: sql<number>`count(*)::int` }).from(orders).where(where),
-  ]);
+      .orderBy(ORDER_BY[f.sort ?? "date_desc"], asc(orders.id))
+      .limit(f.size)
+      .offset((f.page - 1) * f.size);
+  const total = rows[0]?.rowCount ?? (f.page > 1 ? (await tx.select({ total: sql<number>`count(*)::int` }).from(orders).where(where))[0].total : 0);
   return { rows, total };
 }
 
-export const listCustomers = (tx: Tx, orgId: string) =>
-  tx.select().from(customers).where(eq(customers.orgId, orgId)).orderBy(asc(customers.name));
+export const CUSTOMER_STATUSES = { all: "Todos", active: "Activos", inactive: "Inactivos" } as const;
+export type CustomerStatus = keyof typeof CUSTOMER_STATUSES;
+
+// customers are not paginated (the list is a screenful of inline forms); add paging if one org passes a few hundred.
+export function listCustomers(tx: Tx, orgId: string, f: { q?: string; status?: CustomerStatus } = {}) {
+  const escaped = f.q?.replace(/[\\%_]/g, "\\$&");
+  return tx
+    .select()
+    .from(customers)
+    .where(
+      and(
+        eq(customers.orgId, orgId),
+        escaped ? or(ilike(customers.name, `%${escaped}%`), ilike(customers.email, `%${escaped}%`), ilike(customers.phone, `%${escaped}%`)) : undefined,
+        f.status === "active" ? eq(customers.active, true) : f.status === "inactive" ? eq(customers.active, false) : undefined,
+      ),
+    )
+    .orderBy(asc(customers.name), asc(customers.id));
+}
 
 export async function getOrder(tx: Tx, orgId: string, id: string) {
   const [order] = await tx.select().from(orders).where(and(eq(orders.orgId, orgId), eq(orders.id, id)));
