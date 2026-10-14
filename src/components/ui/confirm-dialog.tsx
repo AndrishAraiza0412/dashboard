@@ -23,7 +23,7 @@ export function ConfirmDialog({
   const id = useId();
   return (
     <>
-      <Button variant={destructive ? "danger" : "secondary"} onClick={() => ref.current?.showModal()}>
+      <Button variant={destructive ? "dangerOutline" : "secondary"} onClick={() => ref.current?.showModal()}>
         {trigger}
       </Button>
       <dialog

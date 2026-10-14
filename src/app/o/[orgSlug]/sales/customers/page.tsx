@@ -47,8 +47,8 @@ async function Content({ params }: Pick<PageProps<"/o/[orgSlug]/sales/customers"
           {rows.map((c) => (
             <li key={c.id} className="p-4">
               {canEdit ? (
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <ActionForm action={updateCustomer.bind(null, orgSlug, c.id)} submit="Guardar" submitLabel={`Guardar ${c.name}`} variant="secondary" className="grid flex-1 gap-3 space-y-0 sm:grid-cols-3">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <ActionForm action={updateCustomer.bind(null, orgSlug, c.id)} submit="Guardar" submitLabel={`Guardar ${c.name}`} variant="secondary" className="grid flex-1 items-end gap-3 space-y-0 sm:grid-cols-[1fr_1fr_1fr_auto] [&>p]:col-span-full">
                     <Field id={`cn-${c.id}`} name="name" label="Nombre" defaultValue={c.name} required maxLength={120} />
                     <Field id={`ce-${c.id}`} name="email" label="Correo" type="email" autoComplete="off" spellCheck={false} defaultValue={c.email ?? ""} maxLength={160} />
                     <Field id={`cp-${c.id}`} name="phone" label="Teléfono" type="tel" defaultValue={c.phone ?? ""} maxLength={40} />

@@ -27,7 +27,7 @@ export function StockBadge({ p }: { p: Pick<ProductRow, "active" | "stockQty" | 
 /** Rows arrive already filtered, ordered and paged by the server, so column sorting is off. */
 export function ProductsTable({ rows, base, currency }: { rows: ProductRow[]; base: string; currency: string }) {
   const columns: ColumnDef<ProductRow, unknown>[] = [
-    { accessorKey: "sku", header: "SKU", enableSorting: false },
+    { accessorKey: "sku", header: "SKU", enableSorting: false, meta: { nowrap: true } },
     {
       accessorKey: "name",
       header: "Producto",

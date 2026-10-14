@@ -60,7 +60,7 @@ async function createUser(email: string, password: string, name: string): Promis
                             confirmation_token, recovery_token, email_change, email_change_token_new)
     values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', ${email},
             extensions.crypt(${password}, extensions.gen_salt('bf')), now(),
-            '{"provider":"email","providers":["email"]}', ${JSON.stringify({ full_name: name })}, now(), now(), '', '', '', '')
+            '{"provider":"email","providers":["email"]}', ${sql.json({ full_name: name })}, now(), now(), '', '', '', '')
     returning id`;
   return id;
 }

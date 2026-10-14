@@ -36,7 +36,7 @@ export function ActionForm({
   return (
     <form
       ref={ref}
-      className={cn("space-y-4", className)}
+      className={cn(!/\bspace-y-/.test(className ?? "") && "space-y-4", className)}
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);

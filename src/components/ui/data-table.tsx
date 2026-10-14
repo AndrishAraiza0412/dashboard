@@ -4,6 +4,8 @@ import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type Col
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
+type Meta = { numeric?: boolean; nowrap?: boolean } | undefined;
+
 /** Client-side sort for small lists. Server-side paging/filtering is added per screen (Phases 3-4). */
 export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T, unknown>[]; data: T[]; caption: string }) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -31,7 +33,7 @@ export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T,
                     key={h.id}
                     scope="col"
                     aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"}
-                    className="px-4 py-3 text-[13px] font-medium text-muted"
+                    className={cn("px-4 py-3 text-[13px] font-medium text-muted", (h.column.columnDef.meta as Meta)?.numeric && "text-right")}
                   >
                     {h.column.getCanSort() ? (
                       <button type="button" onClick={h.column.getToggleSortingHandler()} className="inline-flex items-center gap-1 hover:text-ink">
@@ -51,7 +53,7 @@ export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T,
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="border-t border-hairline-soft hover:bg-surface-soft/60">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className={cn("px-4 py-3 text-ink", (cell.column.columnDef.meta as { numeric?: boolean } | undefined)?.numeric && "tabular text-right")}>
+                <td key={cell.id} className={cn("px-4 py-3 text-ink", (cell.column.columnDef.meta as Meta)?.nowrap && "whitespace-nowrap", (cell.column.columnDef.meta as Meta)?.numeric && "tabular whitespace-nowrap text-right")}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

@@ -30,7 +30,7 @@ export function RevenueLine({ data, currency, locale = "es-MX" }: { data: Point[
             cursor={{ stroke: "var(--hairline)" }}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="value"
             stroke="var(--chart-1)"
             strokeWidth={2}
