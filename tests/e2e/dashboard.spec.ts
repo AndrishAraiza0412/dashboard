@@ -63,6 +63,7 @@ async function login(page: Page) {
   await page.getByLabel("Contraseña").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.locator("main").first().waitFor(); // the post-login redirect has landed; navigating earlier aborts it
 }
 const noSeriousViolations = async (page: Page) => {
   const { violations } = await new AxeBuilder({ page }).analyze();

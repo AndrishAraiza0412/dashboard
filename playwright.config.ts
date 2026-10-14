@@ -3,7 +3,8 @@ import { defineConfig } from "@playwright/test";
 
 config({ path: ".env.local" });
 
-const PORT = 3100;
+// E2E_PORT lets the suite reuse a dev server that is already running (Next allows only one per project).
+const PORT = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
   testDir: "./tests/e2e",

@@ -51,12 +51,15 @@ async function login(page: Page) {
   await page.getByLabel("Contraseña").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.locator("main").first().waitFor(); // the post-login redirect has landed; navigating earlier aborts it
 }
 
 async function audit(page: Page, path: string) {
+  const t0 = Date.now();
   await page.goto(path);
   await expect(page.locator("h1").first()).toBeVisible();
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load"); // not "networkidle": dev-server streaming keeps it from ever settling on slow runners
+  console.log(`audit ${page.viewportSize()?.width}px ${path} ready in ${Date.now() - t0} ms`);
   expect(await page.locator("h1:visible").count(), `${path}: one visible h1`).toBe(1);
   const { violations } = await new AxeBuilder({ page }).analyze();
   const bad = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
