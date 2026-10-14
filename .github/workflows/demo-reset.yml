@@ -3,8 +3,9 @@ name: Reset demo
 # Recreates the public demo organization every night, which also resets the shared viewer password and profile.
 # Enable by setting the repository variable DEMO_ENABLED=true.
 on:
-  schedule:
-    - cron: "37 4 * * *"
+  # schedule paused until there is a production project:
+  # schedule:
+  #   - cron: "37 4 * * *"
   workflow_dispatch:
 
 permissions:

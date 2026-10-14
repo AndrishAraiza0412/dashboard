@@ -2,11 +2,9 @@ name: Deploy
 
 # Production is deployed only from here (Vercel's own Git auto-deploy for main is off, see vercel.json):
 # CI green on main -> migrations -> deploy -> smoke test. If any step fails, nothing newer goes live.
+# PAUSED until there are paying clients: manual trigger only. To go automatic again, restore:
+#   workflow_run: { workflows: [CI], types: [completed], branches: [main] }
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 concurrency:

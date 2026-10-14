@@ -2,8 +2,9 @@ name: Nightly backup
 
 # Free-tier Supabase has no point-in-time recovery. Remove this workflow after moving to Pro (daily backups included).
 on:
-  schedule:
-    - cron: "17 3 * * *"
+  # schedule paused until there is a production project:
+  # schedule:
+  #   - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
