@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
+import { JetBrains_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], weight: ["400"] });
+// Oswald is a variable font (weights 200-700): one file covers every weight the UI uses.
+const oswald = Oswald({ variable: "--font-oswald", subsets: ["latin", "latin-ext"], display: "swap" });
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export const viewport: Viewport = { themeColor: "#faf9f5" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-MX" className={`${inter.variable} ${sourceSerif.variable} ${jetbrains.variable} h-full`}>
+    <html lang="es-MX" className={`${oswald.variable} ${jetbrains.variable} h-full`}>
       <body className="min-h-full">{children}</body>
     </html>
   );
