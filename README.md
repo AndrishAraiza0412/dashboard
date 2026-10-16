@@ -9,7 +9,7 @@ SaaS multi-organización (Inventario, Ventas y Compras, módulos activables por 
 - **Aislamiento entre clientes en la base de datos.** La app se conecta como `app_rls` (sin `BYPASSRLS`) y cada petición corre dentro de `withOrg()`: `set local role authenticated` más las claims verificadas con `getClaims()`. Si una consulta se olvida de `withOrg`, devuelve 0 filas, no datos de otro cliente. No existe ninguna credencial con bypass en producción.
 - **Lo sensible vive en Postgres.** Stock, numeración y totales de pedidos, roles, invitaciones y administración de plataforma son funciones `security definer` o triggers; los grants son por columna.
 - **Autorización en cada frontera.** Cada página, Server Action y route handler llama a `requireMembership(slug, rol)`; el layout no es una frontera de seguridad.
-- Decisiones y riesgos completos: `.omc/plans/dashboard-saas-mvp.md`. Estado del proyecto: `.omc/handoff.md`.
+- Diseño y contraste: [`docs/design.md`](docs/design.md).
 
 ## Puesta en marcha
 

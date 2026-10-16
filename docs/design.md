@@ -1,16 +1,16 @@
-# DESIGN.dashboard.md
+# Diseño del dashboard
 
-Adaptation of `DESIGN.md` (Claude.com marketing system) for a dense, data-first dashboard.
+Warm cream canvas and coral accent, adapted for a dense, data-first dashboard.
 Source of truth for values: `src/styles/tokens.css`. If this file and the CSS disagree, the CSS wins.
 
-## What is kept from DESIGN.md
+## Base palette and shapes
 - Warm cream canvas `#faf9f5`, cards `#efe9de`, hairline `#e6dfd8`, warm ink `#141413`.
 - Coral as the single accent: one primary action per screen.
 - Radii 8px (controls) / 12px (cards) / 16px (large containers); pill for badges.
 - Display type is the serif at weight 400 with negative tracking, used for page titles only.
 
 ## What changes for a dashboard
-| DESIGN.md | Dashboard | Why |
+| Marketing site | Dashboard | Why |
 |---|---|---|
 | Section rhythm 96px, card padding 32px | 8px grid, card padding 20-24px | Density: KPIs, tables and charts share one screen |
 | Serif for all headlines and prices | Serif for page titles only; KPI numbers in sans with `tabular-nums` | Digits must align in columns |

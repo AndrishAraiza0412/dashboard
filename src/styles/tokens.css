@@ -1,4 +1,4 @@
-/* Design tokens derived from DESIGN.md (warm cream canvas, coral accent), adapted for dense data UI.
+/* Design tokens (docs/design.md: warm cream canvas, coral accent), adapted for dense data UI.
    Light and dark themes, each with five accent palettes (see the end of this file). */
 :root {
   /* Surfaces */

@@ -18,7 +18,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Visible keyboard focus everywhere (coral ring, per DESIGN.md text-input-focused) */
+/* Visible keyboard focus everywhere (coral ring) */
 :focus-visible {
   outline: 2px solid var(--primary-strong);
   outline-offset: 2px;

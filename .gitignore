@@ -53,3 +53,12 @@ next-env.d.ts
 .claude/.cc-writes
 .omc/sessions/
 .omc/project-memory.json
+
+# editor / agent tooling: kept locally, not part of the app
+/.agents/
+/.claude/
+/.omc/
+/src/.omc/
+/skills-lock.json
+/AGENTS.md
+/DESIGN.md
