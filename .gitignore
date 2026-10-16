@@ -45,7 +45,7 @@ next-env.d.ts
 
 # harness / local state
 /dashboard/
-.omc/state/
+**/.omc/state/
 
 # test output
 /test-results/

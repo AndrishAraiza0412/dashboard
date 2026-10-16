@@ -13,7 +13,7 @@ config({ path: ".env.local" });
 const DEMO = { slug: "demo", name: "Tienda Deportiva Demo" };
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@demo.test"; // set SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD in .env.local to keep a fixed login across reseeds
 const VIEWER_EMAIL = "demo@demo.test";
-const VIEWER_PASSWORD = process.env.DEMO_VIEWER_PASSWORD ?? "choose-a-password"; // public by design: shown on the login page
+const VIEWER_PASSWORD = process.env.DEMO_VIEWER_PASSWORD ?? randomBytes(9).toString("base64url"); // to show it on the login page, set the same value in NEXT_PUBLIC_DEMO_PASSWORD
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(9).toString("base64url");
 
 // The seed deletes the users it is about to recreate, so it may only ever touch demo addresses.
