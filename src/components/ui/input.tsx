@@ -15,7 +15,7 @@ export function Field({
         id={id}
         className={cn(
           "h-10 w-full rounded-md border border-hairline bg-canvas px-3.5 text-ink placeholder:text-muted-soft",
-          "focus:border-primary-strong focus:outline-none focus:ring-[3px] focus:ring-[var(--focus-ring)]",
+          "transition-[border-color,box-shadow] duration-150 hover:border-surface-strong focus:border-primary-strong focus:outline-none focus:ring-[3px] focus:ring-[var(--focus-ring)]",
           className,
         )}
         {...props}
@@ -39,8 +39,8 @@ export function SelectField({
       <select
         id={id}
         className={cn(
-          "h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-ink",
-          "focus:border-primary-strong focus:outline-none focus:ring-[3px] focus:ring-[var(--focus-ring)]",
+          "h-10 w-full cursor-pointer rounded-md border border-hairline bg-canvas px-3 text-ink",
+          "transition-[border-color,box-shadow] duration-150 hover:border-surface-strong focus:border-primary-strong focus:outline-none focus:ring-[3px] focus:ring-[var(--focus-ring)]",
           className,
         )}
         {...props}

@@ -27,7 +27,8 @@ import { authUsers } from "drizzle-orm/supabase";
 
 export const memberRole = pgEnum("member_role", ["admin", "member", "viewer"]);
 export const orderStatus = pgEnum("order_status", ["draft", "confirmed", "fulfilled", "cancelled"]);
-export const movementReason = pgEnum("movement_reason", ["sale", "sale_cancel", "restock", "adjustment"]);
+export const movementReason = pgEnum("movement_reason", ["sale", "sale_cancel", "restock", "adjustment", "purchase"]);
+export const purchaseStatus = pgEnum("purchase_status", ["draft", "ordered", "received", "cancelled"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const money = (name: string) => numeric(name, { precision: 12, scale: 2 });
@@ -43,16 +44,21 @@ export const organizations = pgTable(
     enabledModules: text("enabled_modules")
       .array()
       .notNull()
-      .default(sql`'{inventory,sales}'::text[]`),
+      .default(sql`'{inventory,sales,purchases}'::text[]`),
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
     isDemo: boolean("is_demo").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [
-    check("organizations_modules_known", sql`${t.enabledModules} <@ '{inventory,sales}'::text[]`),
+    // keep in sync with MODULES (src/lib/modules.ts)
+    check("organizations_modules_known", sql`${t.enabledModules} <@ '{inventory,sales,purchases}'::text[]`),
     check(
       "organizations_sales_needs_inventory",
       sql`not ('sales' = any(${t.enabledModules})) or 'inventory' = any(${t.enabledModules})`,
+    ),
+    check(
+      "organizations_purchases_needs_inventory",
+      sql`not ('purchases' = any(${t.enabledModules})) or 'inventory' = any(${t.enabledModules})`,
     ),
   ],
 );
@@ -62,6 +68,7 @@ export const orgCounters = pgTable("org_counters", {
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
   nextOrderNo: integer("next_order_no").notNull().default(1),
+  nextPurchaseNo: integer("next_purchase_no").notNull().default(1),
 });
 
 export const platformAdmins = pgTable("platform_admins", {
@@ -223,6 +230,68 @@ export const orderItems = pgTable(
   ],
 );
 
+export const suppliers = pgTable(
+  "suppliers",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull(),
+    name: text().notNull(),
+    email: text(),
+    phone: text(),
+    active: boolean().notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    foreignKey({ columns: [t.orgId], foreignColumns: [organizations.id] }).onDelete("cascade"),
+    unique("suppliers_org_id_id_key").on(t.orgId, t.id),
+  ],
+);
+
+// Purchase orders to suppliers: draft -> ordered -> received (stock goes up only on receipt).
+export const purchaseOrders = pgTable(
+  "purchase_orders",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull(),
+    number: integer(),
+    supplierId: uuid("supplier_id"),
+    status: purchaseStatus().notNull().default("draft"),
+    total: money("total").notNull().default("0"),
+    notes: text(),
+    createdAt: createdAt(),
+    orderedAt: timestamp("ordered_at", { withTimezone: true }),
+    receivedAt: timestamp("received_at", { withTimezone: true }),
+  },
+  (t) => [
+    foreignKey({ columns: [t.orgId], foreignColumns: [organizations.id] }).onDelete("cascade"),
+    foreignKey({ columns: [t.orgId, t.supplierId], foreignColumns: [suppliers.orgId, suppliers.id] }),
+    unique("purchase_orders_org_id_id_key").on(t.orgId, t.id),
+    unique("purchase_orders_org_number_key").on(t.orgId, t.number),
+    index("purchase_orders_org_created_idx").on(t.orgId, t.createdAt),
+  ],
+);
+
+export const purchaseOrderItems = pgTable(
+  "purchase_order_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull(),
+    purchaseOrderId: uuid("purchase_order_id").notNull(),
+    productId: uuid("product_id").notNull(),
+    qty: integer().notNull(),
+    unitCost: money("unit_cost").notNull(),
+    lineTotal: money("line_total").generatedAlwaysAs(sql`qty * unit_cost`),
+  },
+  (t) => [
+    foreignKey({ columns: [t.orgId], foreignColumns: [organizations.id] }).onDelete("cascade"),
+    foreignKey({ columns: [t.orgId, t.purchaseOrderId], foreignColumns: [purchaseOrders.orgId, purchaseOrders.id] }),
+    foreignKey({ columns: [t.orgId, t.productId], foreignColumns: [products.orgId, products.id] }),
+    unique("purchase_order_items_po_product_key").on(t.purchaseOrderId, t.productId),
+    check("purchase_order_items_qty_positive", sql`${t.qty} > 0`),
+    check("purchase_order_items_cost_nonneg", sql`${t.unitCost} >= 0`),
+  ],
+);
+
 export const stockMovements = pgTable(
   "stock_movements",
   {
@@ -232,6 +301,7 @@ export const stockMovements = pgTable(
     delta: integer().notNull(),
     reason: movementReason().notNull(),
     orderId: uuid("order_id"),
+    purchaseOrderId: uuid("purchase_order_id"),
     note: text(),
     createdBy: uuid("created_by").default(sql`auth.uid()`),
     createdAt: createdAt(),
@@ -240,6 +310,7 @@ export const stockMovements = pgTable(
     foreignKey({ columns: [t.orgId], foreignColumns: [organizations.id] }).onDelete("cascade"),
     foreignKey({ columns: [t.orgId, t.productId], foreignColumns: [products.orgId, products.id] }),
     foreignKey({ columns: [t.orgId, t.orderId], foreignColumns: [orders.orgId, orders.id] }),
+    foreignKey({ columns: [t.orgId, t.purchaseOrderId], foreignColumns: [purchaseOrders.orgId, purchaseOrders.id] }),
     check("stock_movements_delta_nonzero", sql`${t.delta} <> 0`),
     index("stock_movements_product_idx").on(t.productId, t.createdAt),
   ],

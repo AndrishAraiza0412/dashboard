@@ -4,6 +4,9 @@
 html {
   color-scheme: light;
 }
+html[data-theme="dark"], html[data-style="glass"] {
+  color-scheme: dark;
+}
 
 body {
   background: var(--canvas);
@@ -71,3 +74,101 @@ dialog[open]::backdrop { animation: fade 180ms var(--ease-out); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Bars grow from the left once, on load (transform only). */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+}
+.bar-grow { transform-origin: left; animation: bar-grow 420ms var(--ease-out) both; }
+
+/* ---- Glass style (<html data-style="glass">): frosted, translucent surfaces over a deep, colorful background.
+   Light mode = a saturated "wallpaper" in the palette's hues with white text; dark mode = the same hues, deepened, with glows.
+   Both start from the dark tokens (tokens.css). Contrast was checked against the composited colors, since axe can't
+   see through gradients: every text color stays >= 4.5:1 on the bare background, on a card, and on a card inside a card.
+   That is why the wallpaper tones stay deep (luminance <= 0.08) and status text gets near-white tints here.
+   Only the outermost surface blurs: nested blurs cost GPU time and add nothing. */
+html[data-style="glass"] {
+  --wall-1: #7a2a1a; --wall-2: #86321f; --wall-3: #5e1c3e;
+  --glass: color-mix(in srgb, #fff 10%, transparent);
+  --glass-nested: color-mix(in srgb, #fff 6%, transparent);
+  --glass-edge: color-mix(in srgb, #fff 24%, transparent);
+  --glass-hi: color-mix(in srgb, #fff 18%, transparent);
+  --bar-bottom: color-mix(in srgb, var(--bar-top) 25%, transparent);
+}
+html[data-style="glass"][data-palette="oceano"] { --wall-1: #0a3f8f; --wall-2: #0b4f8c; --wall-3: #06566a; }
+html[data-style="glass"][data-palette="bosque"] { --wall-1: #0b4a37; --wall-2: #0d5239; --wall-3: #305510; }
+html[data-style="glass"][data-palette="uva"] { --wall-1: #4a1f9a; --wall-2: #5c28a8; --wall-3: #23409a; }
+html[data-style="glass"][data-palette="grafito"] { --wall-1: #2e333b; --wall-2: #3d434c; --wall-3: #22262d; }
+html[data-style="glass"]:not([data-theme="dark"]) {
+  --canvas: color-mix(in srgb, var(--wall-1) 65%, #000); /* popovers, dialogs and inputs stay opaque */
+  --ink: #fff;
+  --body: #f1f3f7;
+  --muted: #e6ebf2;
+  --primary-text: #fff;
+  --error: #ffe0e0;
+  --success: #d6f8e0;
+  --warning: #fff0c4;
+  --error-bg: color-mix(in srgb, #000 22%, transparent);
+  --success-bg: color-mix(in srgb, #000 22%, transparent);
+  --warning-bg: color-mix(in srgb, #000 22%, transparent);
+  --chart-1: #fff; /* white marks read on every wallpaper; the palette lives in the background */
+  --chart-axis: #e6ebf2;
+  --chart-grid: color-mix(in srgb, #fff 16%, transparent);
+}
+html[data-style="glass"][data-theme="dark"] {
+  --canvas: color-mix(in srgb, var(--wall-1) 30%, #0a0a0a);
+  --glass: color-mix(in srgb, #fff 5%, transparent);
+  --glass-nested: color-mix(in srgb, #fff 4%, transparent);
+  --glass-edge: color-mix(in srgb, #fff 9%, transparent);
+  --glass-hi: color-mix(in srgb, #fff 9%, transparent);
+  --muted: #cfccc4;
+  --chart-axis: #cfccc4;
+  --primary-text: color-mix(in srgb, var(--primary-hover) 70%, #fff); /* hover ≈ the dark primary-text, lifted toward white */
+  --error: #f9b4b4;
+  --success: #8ad8a6;
+  --warning: #f0c46a;
+}
+html[data-style="glass"] body {
+  background:
+    radial-gradient(70vw 70vh at 75% 25%, var(--wall-2), transparent),
+    radial-gradient(60vw 60vh at 15% 90%, var(--wall-3), transparent),
+    linear-gradient(135deg, var(--wall-1), var(--wall-3) 55%, var(--wall-2));
+  background-attachment: fixed;
+}
+html[data-style="glass"][data-theme="dark"] body {
+  background:
+    radial-gradient(55vw 60vh at 100% 0%, color-mix(in srgb, var(--wall-2) 35%, transparent), transparent),
+    radial-gradient(50vw 55vh at 0% 100%, color-mix(in srgb, var(--primary) 24%, transparent), transparent),
+    linear-gradient(135deg, color-mix(in srgb, var(--wall-1) 45%, #060606), color-mix(in srgb, var(--wall-3) 45%, #060606) 55%, color-mix(in srgb, var(--wall-2) 45%, #060606));
+  background-attachment: fixed;
+}
+html[data-style="glass"] :is(.bg-canvas, .bg-surface-soft, .bg-surface-card, .bg-canvas\/80):not(input, select, textarea, dialog, .shadow-lg) {
+  background-color: var(--glass);
+  border-color: var(--glass-edge);
+}
+html[data-style="glass"] :is(.bg-canvas, .bg-surface-soft, .bg-surface-card) :is(.bg-canvas, .bg-surface-soft, .bg-surface-card):not(input, select, textarea, dialog, .shadow-lg) {
+  background-color: var(--glass-nested);
+}
+html[data-style="glass"] :is(.bg-canvas, .bg-surface-soft, .bg-surface-card, .bg-canvas\/80):not(input, select, textarea, dialog, .shadow-lg):not(:is(.bg-canvas, .bg-surface-soft, .bg-surface-card) *) {
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  box-shadow: inset 0 1px 0 var(--glass-edge), 0 16px 40px -20px rgb(0 0 0 / 0.45);
+}
+/* Rounder, softer shapes: big cards, pill buttons and fields. */
+html[data-style="glass"] .rounded-xl { border-radius: 22px; }
+html[data-style="glass"] .rounded-lg { border-radius: 16px; }
+html[data-style="glass"] .rounded-md:is(button, a, input, select, .h-10) { border-radius: 9999px; }
+/* Selected nav items and segments: a brighter pane instead of an opaque surface. */
+html[data-style="glass"] :is(nav, [role="group"]) :is([aria-current="page"], [aria-current="true"], [aria-pressed="true"], a:hover) {
+  background-color: var(--glass-hi);
+}
+/* KPI icons pick up the palette's chart colors; ranking bars fade like the column chart. */
+html[data-style="glass"] [data-tile] [data-tile-icon] {
+  color: var(--tile, var(--primary));
+  background-color: color-mix(in srgb, var(--tile, var(--primary)) 20%, transparent);
+  --tw-ring-color: color-mix(in srgb, var(--tile, var(--primary)) 35%, transparent);
+}
+html[data-style="glass"] [data-tile]:nth-child(4n + 2) { --tile: var(--chart-4); }
+html[data-style="glass"] [data-tile]:nth-child(4n + 3) { --tile: var(--chart-3); }
+html[data-style="glass"] [data-tile]:nth-child(4n + 4) { --tile: var(--chart-5); }
+html[data-style="glass"] .bar-grow { background-image: linear-gradient(90deg, var(--bar-bottom), var(--bar-top)); }

@@ -74,7 +74,7 @@ const noSeriousViolations = async (page: Page) => {
 test("KPIs, range presets and charts for an org with sales and inventory", async ({ page }) => {
   await login(page);
   await page.goto(`/o/${orgs.full.slug}`);
-  const tile = (label: string) => page.locator("div.rounded-lg", { has: page.getByText(label, { exact: true }) }).filter({ visible: true }).first();
+  const tile = (label: string) => page.locator("[data-tile]", { has: page.getByText(new RegExp(`^${label}$`, "i")) }).filter({ visible: true }).first();
 
   // 30d default: 2 orders in range (the 40-day-old one is outside) = 3*100 + 2*50 + 100 = 500
   await expect(tile("Ingresos")).toContainText("$500.00");
@@ -120,7 +120,7 @@ test("richer views: comparison, custom range, extra cards and the admin activity
   await page.locator('form input[name="to"]:visible').fill(local(0));
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page).toHaveURL(/range=custom/);
-  const tile = (label: string) => page.locator("div.rounded-lg", { has: page.getByText(label, { exact: true }) }).filter({ visible: true }).first();
+  const tile = (label: string) => page.locator("[data-tile]", { has: page.getByText(new RegExp(`^${label}$`, "i")) }).filter({ visible: true }).first();
   await expect(tile("Pedidos")).toContainText("2");
   await expect(tile("Ingresos")).toContainText("$500.00");
   // Garbage in the URL falls back to the default period instead of failing
@@ -148,4 +148,54 @@ test("375px has no horizontal scroll and no serious axe violations", async ({ pa
   await expect(page.getByRole("heading", { name: "Ventas por categoría" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await noSeriousViolations(page);
+});
+
+test("glass style and palettes: toggle persists across reloads, recolors surfaces, no serious axe violations", async ({ page }) => {
+  await login(page);
+  await page.goto(`/o/${orgs.full.slug}`);
+  await page.getByRole("button", { name: "Estilo cristal" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-style", "glass");
+  await page.getByLabel("Apariencia").click();
+  await page.getByRole("button", { name: "Uva" }).click();
+  const canvas = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--wall-1").trim());
+  expect(await canvas()).toBe("#4a1f9a");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-style", "glass");
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "uva");
+  await expect(page.getByRole("button", { name: "Estilo cristal" })).toHaveAttribute("aria-pressed", "true");
+  await noSeriousViolations(page);
+  if (process.env.SHOTS) {
+    for (const theme of ["light", "dark"]) {
+      for (const palette of ["coral", "oceano", "bosque", "uva"]) {
+        await page.evaluate(([t, p]) => { localStorage.setItem("theme", t); localStorage.setItem("palette", p); }, [theme, palette]);
+        await page.reload();
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: `${process.env.SHOTS}/glass-${theme}-${palette}.png`, });
+      }
+    }
+  }
+});
+
+test("live: changes made elsewhere and the user's own actions update the page in place, without a reload", async ({ page }) => {
+  await login(page);
+  await page.goto(`/o/${orgs.full.slug}`);
+  const tile = (label: string) => page.locator("[data-tile]", { has: page.getByText(new RegExp(`^${label}$`, "i")) }).filter({ visible: true }).first();
+  await expect(tile("Productos activos")).toContainText("2");
+  await expect(page.locator("html")).toHaveAttribute("data-live", "on", { timeout: 15_000 });
+  await page.evaluate(() => Object.assign(window, { __sameDocument: true })); // lost if the page reloads
+
+  // Someone else (here: straight into the database) adds a product: the KPI follows on its own.
+  await sql`insert into products (org_id, sku, name, stock_qty, reorder_level) values (${orgs.full.id}, 'LIVE1', 'Llegó en vivo', 10, 1)`;
+  await expect(tile("Productos activos")).toContainText("3", { timeout: 15_000 });
+  expect(await page.evaluate(() => (window as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
+
+  // The user's own action: the list updates in place.
+  await page.getByRole("link", { name: "Inventario", exact: true }).first().click();
+  await expect(page.getByRole("link", { name: "Llegó en vivo" })).toBeVisible();
+  await page.goto(`/o/${orgs.full.slug}/inventory/categories`);
+  await page.evaluate(() => Object.assign(window, { __sameDocument: true }));
+  await page.getByLabel("Nueva categoría").fill("Recién creada");
+  await page.getByRole("button", { name: "Añadir categoría" }).click();
+  await expect(page.getByRole("button", { name: "Guardar categoría Recién creada" })).toBeVisible();
+  expect(await page.evaluate(() => (window as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
 });

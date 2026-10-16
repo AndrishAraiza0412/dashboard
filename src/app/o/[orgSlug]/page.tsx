@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icons";
 import { Field } from "@/components/ui/input";
 import { RevenueLine } from "@/components/ui/line-chart";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,6 +15,7 @@ import { StatTile } from "@/components/ui/stat-tile";
 import { dateTime, money } from "@/lib/format";
 import { one, query } from "@/lib/params";
 import { listActivity } from "@/server/activity";
+import { createRestockOrder } from "@/server/actions/purchases";
 import { getMetrics, parseRange, RANGES, type Range } from "@/server/metrics";
 import { STATUSES, TONES } from "@/server/sales";
 import { loadOrg } from "@/server/db/with-org";
@@ -36,9 +38,9 @@ function Skeleton() {
     <div role="status" aria-busy="true" aria-label="Cargando resumen" className="animate-pulse space-y-6">
       <div className="h-10 w-64 rounded-md bg-surface-card" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => <div key={i} className="h-28 rounded-lg bg-surface-card" />)}
+        {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 rounded-xl bg-surface-card" />)}
       </div>
-      <div className="h-80 rounded-lg bg-surface-card" />
+      <div className="h-80 rounded-xl bg-surface-card" />
     </div>
   );
 }
@@ -92,15 +94,43 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
     <div className="fade-in">
       <PageHeader title={ctx.name} description={sales ? `${day(m.from)} – ${day(m.to)}` : "Resumen del inventario"} />
 
+      {inventory && m.lowStock.count > 0 && (
+        <section aria-labelledby="low-stock-alert" className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-warning/30 bg-warning-bg px-5 py-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-canvas text-warning ring-1 ring-warning/30">
+            <Icon name="alert" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id="low-stock-alert" className="font-medium text-ink">
+              {m.lowStock.count === 1 ? "1 producto con stock bajo" : `${m.lowStock.count} productos con stock bajo`}
+              {m.inventory.outOfStock > 0 && <span className="text-warning"> · {m.inventory.outOfStock} {m.inventory.outOfStock === 1 ? "agotado" : "agotados"}</span>}
+            </h2>
+            <p className="mt-0.5 truncate text-[13px] text-body">
+              {m.lowStock.items.slice(0, 3).map((p) => `${p.name} (${p.stockQty})`).join(", ")}
+              {m.lowStock.count > 3 && ` y ${m.lowStock.count - 3} más`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={`${base}/inventory?stock=low`} className="inline-flex h-9 items-center rounded-md border border-hairline bg-canvas px-4 text-[13px] font-medium text-ink transition-colors hover:bg-surface-soft">
+              Ver productos
+            </Link>
+            {ctx.role !== "viewer" && ctx.modules.includes("purchases") && (
+              <form action={createRestockOrder.bind(null, orgSlug)}>
+                <Button type="submit" variant="primary" className="h-9 px-4 text-[13px]">Crear orden de reposición</Button>
+              </form>
+            )}
+          </div>
+        </section>
+      )}
+
       {sales && (
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          <nav aria-label="Periodo" className="flex flex-wrap gap-2">
+          <nav aria-label="Periodo" className="flex flex-wrap gap-1 rounded-full border border-hairline bg-surface-soft p-1">
             {(Object.keys(RANGES) as Range[]).map((r) => (
               <Link
                 key={r}
                 href={href({ range: r })}
                 aria-current={r === activeRange ? "true" : undefined}
-                className="rounded-full border border-hairline px-4 py-1.5 text-[13px] text-ink transition-colors duration-150 hover:bg-surface-soft aria-[current=true]:bg-surface-card aria-[current=true]:font-medium"
+                className="rounded-full px-4 py-1.5 text-[13px] text-body transition-[color,background-color,box-shadow] duration-150 hover:text-ink aria-[current=true]:bg-canvas aria-[current=true]:font-medium aria-[current=true]:text-ink aria-[current=true]:shadow-sm"
               >
                 {RANGE_LABELS[r]}
               </Link>
@@ -108,12 +138,13 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
           </nav>
           <details className="relative" open={m.custom}>
             <summary
-              className="cursor-pointer list-none rounded-full border border-hairline px-4 py-1.5 text-[13px] text-ink transition-colors duration-150 hover:bg-surface-soft aria-[current=true]:bg-surface-card [&::-webkit-details-marker]:hidden"
+              className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-hairline bg-canvas px-4 py-2 text-[13px] text-ink transition-colors duration-150 hover:bg-surface-soft aria-[current=true]:border-primary-strong aria-[current=true]:font-medium [&::-webkit-details-marker]:hidden"
               aria-current={m.custom ? "true" : undefined}
             >
+              <Icon name="calendar" className="size-4 text-muted" />
               Personalizado
             </summary>
-            <form method="get" action={base} className="absolute left-0 z-10 mt-2 flex w-[min(92vw,420px)] flex-wrap items-end gap-3 rounded-lg border border-hairline bg-canvas p-4 shadow-sm">
+            <form method="get" action={base} className="absolute left-0 z-30 mt-2 flex w-[min(92vw,420px)] flex-wrap items-end gap-3 rounded-xl border border-hairline bg-canvas p-4 shadow-lg">
               <input type="hidden" name="range" value="custom" />
               {!compare && <input type="hidden" name="compare" value="0" />}
               <Field id="from" name="from" label="Desde" type="date" defaultValue={m.from} max={m.to} required className="w-40" />
@@ -123,7 +154,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
           </details>
           <Link
             href={href({ range: m.custom ? "custom" : rangeParam, from: m.custom ? m.from : undefined, to: m.custom ? m.to : undefined, compare: compare ? "0" : undefined })}
-            className="ml-auto text-[13px] text-body underline underline-offset-2"
+            className="ml-auto rounded-md px-2 py-1 text-[13px] text-body underline underline-offset-2 transition-colors hover:bg-surface-card hover:text-ink"
           >
             {compare ? "Ocultar comparación" : "Comparar con el periodo anterior"}
           </Link>
@@ -132,18 +163,18 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
 
       {sales && (
         <div className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile label="Ingresos" value={fmt(m.revenue)} {...revenue} hint="vs. periodo anterior" />
-          <StatTile label="Pedidos" value={String(m.orders)} {...orders} hint={m.customersServed ? `${m.customersServed} ${m.customersServed === 1 ? "cliente" : "clientes"}` : "vs. periodo anterior"} />
-          <StatTile label="Ticket promedio" value={m.avgTicket === null ? "—" : fmt(m.avgTicket)} {...ticket} hint="vs. periodo anterior" />
-          <StatTile label="Margen estimado" value={fmt(m.margin)} hint={m.marginPct === null ? "sin ventas" : `${m.marginPct}% de los ingresos`} />
+          <StatTile icon="dollar" label="Ingresos" value={fmt(m.revenue)} {...revenue} hint="vs. periodo anterior" />
+          <StatTile icon="bag" label="Pedidos" value={String(m.orders)} {...orders} hint={m.customersServed ? `${m.customersServed} ${m.customersServed === 1 ? "cliente" : "clientes"}` : "vs. periodo anterior"} />
+          <StatTile icon="trend" label="Ticket promedio" value={m.avgTicket === null ? "—" : fmt(m.avgTicket)} {...ticket} hint="vs. periodo anterior" />
+          <StatTile icon="percent" label="Margen estimado" value={fmt(m.margin)} hint={m.marginPct === null ? "sin ventas" : `${m.marginPct}% de los ingresos`} />
         </div>
       )}
       {inventory && (
         <div className={`stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${sales ? "mt-4" : ""}`}>
-          <StatTile label="Valor del inventario" value={fmt(m.inventory.stockValue)} hint="a costo" />
-          <StatTile label="Productos activos" value={String(m.inventory.active)} />
-          <StatTile label="Stock bajo" value={String(m.lowStock.count)} hint={m.lowStock.count === 1 ? "producto" : "productos"} />
-          <StatTile label="Agotados" value={String(m.inventory.outOfStock)} hint={m.inventory.outOfStock === 1 ? "producto" : "productos"} />
+          <StatTile icon="box" label="Valor del inventario" value={fmt(m.inventory.stockValue)} hint="a costo" />
+          <StatTile icon="check" label="Productos activos" value={String(m.inventory.active)} />
+          <StatTile icon="alert" label="Stock bajo" value={String(m.lowStock.count)} hint={m.lowStock.count === 1 ? "producto" : "productos"} />
+          <StatTile icon="ban" label="Agotados" value={String(m.inventory.outOfStock)} hint={m.inventory.outOfStock === 1 ? "producto" : "productos"} />
         </div>
       )}
 
@@ -193,7 +224,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
               ) : (
                 <ul className="divide-y divide-hairline-soft">
                   {m.recentOrders.map((o) => (
-                    <li key={o.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+                    <li key={o.id} className="-mx-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-soft">
                       <span className="min-w-0">
                         <Link href={`${base}/sales/${o.id}`} className="font-medium text-ink underline-offset-2 hover:underline">{o.number ? `#${o.number}` : "Borrador"}</Link>
                         <span className="text-muted"> · {o.customer ?? "Sin cliente"}</span>
@@ -201,7 +232,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/o/[orgSlug]">,
                       </span>
                       <span className="flex items-center gap-3">
                         <Badge tone={TONES[o.status as keyof typeof TONES]}>{STATUSES[o.status as keyof typeof STATUSES]}</Badge>
-                        <span className="tabular text-ink">{fmt(o.total)}</span>
+                        <span className="tabular font-medium text-ink">{fmt(o.total)}</span>
                       </span>
                     </li>
                   ))}

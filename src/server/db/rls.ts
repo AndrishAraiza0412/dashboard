@@ -24,9 +24,7 @@ export function runAsUser<T>(
   fn: (tx: Tx) => Promise<T>,
   requestId?: string,
 ): Promise<T> {
-  if (claims.role !== "authenticated" || !claims.sub) {
-    throw new Error("runAsUser: claims are not from an authenticated user");
-  }
+  assertAuthenticated(claims);
   return db.transaction(async (tx) => {
     // One statement, one round trip (each trip to the hosted database costs ~70 ms). Bound parameters, never
     // string-built SQL. set_config('role', ..., true) is SET LOCAL ROLE: it checks membership the same way.
@@ -37,4 +35,10 @@ export function runAsUser<T>(
     );
     return fn(tx);
   });
+}
+
+export function assertAuthenticated(claims: Claims) {
+  if (claims.role !== "authenticated" || !claims.sub) {
+    throw new Error("runAsUser: claims are not from an authenticated user");
+  }
 }

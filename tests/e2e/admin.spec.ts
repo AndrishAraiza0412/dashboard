@@ -149,6 +149,9 @@ test("platform admin: creates an org, manages modules, suspends it", async ({ pa
   await expect(card.getByRole("alert").filter({ hasText: "Ventas necesita el módulo de Inventario." })).toBeVisible();
   await card.getByRole("checkbox", { name: "Ventas" }).uncheck();
   await card.getByRole("button", { name: "Guardar módulos" }).click();
+  await expect(card.getByRole("alert").filter({ hasText: "Compras necesita el módulo de Inventario." })).toBeVisible();
+  await card.getByRole("checkbox", { name: "Compras" }).uncheck();
+  await card.getByRole("button", { name: "Guardar módulos" }).click();
   await expect(card.getByRole("status").filter({ hasText: "Módulos actualizados." })).toBeVisible();
   const [row] = await sql`select enabled_modules from organizations where slug = ${created.slug}`;
   expect(row.enabled_modules).toEqual([]);

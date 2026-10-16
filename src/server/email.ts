@@ -1,6 +1,7 @@
 import "server-only";
+import { APP_NAME } from "@/lib/brand";
 
-const FROM = process.env.EMAIL_FROM ?? "Dashboard <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? `${APP_NAME} <onboarding@resend.dev>`;
 
 /** Sends through Resend's REST API. Without RESEND_API_KEY (local dev) the email is logged instead. */
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {

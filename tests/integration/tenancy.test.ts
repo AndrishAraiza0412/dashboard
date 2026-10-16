@@ -284,6 +284,11 @@ describe("AC5 platform admin functions", () => {
       asUser(platform, (tx) => tx`select public.admin_set_modules(${orgA}, '{sales}')`),
     ).rejects.toThrow(/organizations_sales_needs_inventory/);
   });
+
+  it("purchases needs inventory, and unknown modules are refused", async () => {
+    await expect(asUser(platform, (tx) => tx`select public.admin_set_modules(${orgA}, '{purchases}')`)).rejects.toThrow(/organizations_purchases_needs_inventory/);
+    await expect(asUser(platform, (tx) => tx`select public.admin_set_modules(${orgA}, '{inventory,payroll}')`)).rejects.toThrow(/organizations_modules_known/);
+  });
 });
 
 describe("AC7 suspended organization", () => {

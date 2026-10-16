@@ -6,6 +6,7 @@ import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Field } from "@/components/ui/input";
 import { CurrencySelect, TimezoneSelect } from "@/components/ui/option-selects";
 import { PageHeader } from "@/components/ui/page-header";
+import { MODULES } from "@/lib/modules";
 import { createOrg, setModules, setSuspended } from "@/server/actions/admin";
 import { loadAdminOrgs } from "@/server/admin";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -33,7 +34,7 @@ async function Content() {
     <div className="fade-in">
       <PageHeader title="Organizaciones" description={`${orgs.length} en la plataforma`} />
 
-      <section aria-labelledby="new-org" className="mb-10 max-w-xl">
+      <section aria-labelledby="new-org" className="mb-10 max-w-xl rounded-xl border border-hairline bg-surface-card p-6">
         <h2 id="new-org" className="mb-4 text-lg font-medium text-ink">Nueva organización</h2>
         <ActionForm action={createOrg} submit="Crear e invitar" resetOnSuccess>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -46,9 +47,9 @@ async function Content() {
         </ActionForm>
       </section>
 
-      <ul className="space-y-4">
+      <ul className="stagger space-y-4">
         {orgs.map((o) => (
-          <li key={o.id} className="rounded-lg border border-hairline p-5">
+          <li key={o.id} className="rounded-xl border border-hairline bg-canvas p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-md">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate font-medium text-ink">{o.name}</p>
@@ -62,8 +63,9 @@ async function Content() {
             </div>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
               <ActionForm action={setModules.bind(null, o.id)} submit="Guardar módulos" variant="secondary" className="flex flex-wrap items-center gap-4 space-y-0">
-                <Check name="inventory" label="Inventario" defaultChecked={o.modules.includes("inventory")} />
-                <Check name="sales" label="Ventas" defaultChecked={o.modules.includes("sales")} />
+                {MODULES.map((m) => (
+                  <Check key={m.id} name={m.id} label={m.label} defaultChecked={o.modules.includes(m.id)} />
+                ))}
               </ActionForm>
               {o.suspended ? (
                 <ConfirmActionButton action={setSuspended.bind(null, o.id, false)} trigger="Reactivar" title={`¿Reactivar ${o.name}?`} description="Sus miembros recuperarán el acceso." confirmLabel="Reactivar" />

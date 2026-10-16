@@ -15,7 +15,8 @@ export async function listActivity(tx: Tx, orgId: string, f: { entity?: Entity; 
         entity: auditLog.entity,
         diff: auditLog.diff,
         createdAt: auditLog.createdAt,
-        actor: profiles.email,
+        // display name; without one, the part of the email before "@"
+        actor: sql<string | null>`coalesce(nullif(${profiles.fullName}, ''), split_part(${profiles.email}, '@', 1))`,
       })
       .from(auditLog)
       .leftJoin(profiles, eq(profiles.id, auditLog.actorId))

@@ -20,7 +20,7 @@ export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T,
 
   return (
     // Scrolls inside its container so the page never scrolls horizontally on mobile.
-    <div className="overflow-x-auto rounded-lg border border-hairline bg-canvas">
+    <div className="overflow-x-auto rounded-xl border border-hairline bg-canvas shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
       <table className="w-full min-w-[560px] border-collapse text-left">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-surface-soft">
@@ -33,10 +33,10 @@ export function DataTable<T>({ columns, data, caption }: { columns: ColumnDef<T,
                     key={h.id}
                     scope="col"
                     aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"}
-                    className={cn("px-4 py-3 text-[13px] font-medium text-muted", (h.column.columnDef.meta as Meta)?.numeric && "text-right")}
+                    className={cn("px-4 py-3 text-[12px] font-medium uppercase tracking-wide text-muted", (h.column.columnDef.meta as Meta)?.numeric && "text-right")}
                   >
                     {h.column.getCanSort() ? (
-                      <button type="button" onClick={h.column.getToggleSortingHandler()} className="inline-flex items-center gap-1 hover:text-ink">
+                      <button type="button" onClick={h.column.getToggleSortingHandler()} className="inline-flex cursor-pointer items-center gap-1 uppercase tracking-wide transition-colors hover:text-ink">
                         {flexRender(h.column.columnDef.header, h.getContext())}
                         <span aria-hidden="true">{sorted === "asc" ? "↑" : sorted === "desc" ? "↓" : ""}</span>
                       </button>

@@ -8,7 +8,7 @@ export function PageSkeleton({ rows = 6 }: { rows?: number }) {
       </div>
       <div className="space-y-3">
         {Array.from({ length: rows }, (_, i) => (
-          <div key={i} className="h-12 rounded-lg bg-surface-card" />
+          <div key={i} className="h-12 rounded-xl bg-surface-card" />
         ))}
       </div>
     </div>

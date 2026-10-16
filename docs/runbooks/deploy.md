@@ -5,13 +5,14 @@ Producción se despliega **solo** desde GitHub Actions (`.github/workflows/deplo
 ## Una sola vez
 
 ### 1. Supabase (proyecto de producción, separado del de desarrollo)
-1. Crear el proyecto. Anotar el `project ref` y la región.
+1. Crear el proyecto. Anotar el `project ref` y la región. La región de las funciones de Vercel (`vercel.json` → `regions`, hoy `iad1` = `us-east-1`) debe ser la misma; si no, cada consulta paga la distancia (~70 ms por ida y vuelta).
 2. **Authentication → Signing Keys**: activar claves asimétricas (`getClaims()` las necesita).
 3. **Authentication → Providers → Email**: *Confirm email* activado. *Signups* activados (el flujo de invitación crea la cuenta), pero la UI no ofrece registro sin token. Rate limits de Auth activados.
 4. **Authentication → URL Configuration**: Site URL = URL de producción; Redirect URLs = `<URL>/auth/confirm`.
 5. **Authentication → Email Templates**: "Confirm signup" → `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`; "Reset password" → igual con `&type=recovery`.
 6. **Authentication → SMTP**: Resend, con el dominio verificado (SPF/DKIM). Sin dominio el correo solo llega a miembros del equipo.
-7. **Settings → Data API**: quitar `public` de los esquemas expuestos (la app solo usa supabase-js para Auth).
+7. **Settings → Data API**: quitar `public` de los esquemas expuestos (la app solo usa supabase-js para Auth y para Realtime).
+7b. **Realtime → Settings**: dejar los canales privados permitidos (las pantallas en vivo usan el canal privado `org:<id>`, autorizado por RLS en `realtime.messages`, migración `0009`).
 8. Primera migración y rol de la app (desde tu máquina, con la conexión de sesión del pooler, puerto 5432):
    ```bash
    DATABASE_URL_MIGRATE='postgresql://postgres.<ref>:<db-password>@<pooler-host>:5432/postgres' npm run db:migrate
@@ -24,7 +25,7 @@ Producción se despliega **solo** desde GitHub Actions (`.github/workflows/deplo
 ### 2. Vercel
 1. Importar el repositorio. Framework: Next.js. **Build Command:** `next build --webpack` (o deja el predeterminado si prefieres Turbopack; CI usa webpack).
 2. Variables de entorno de **Production** (y las de Preview apuntando a la base de desarrollo):
-   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `DATABASE_URL` (rol `app_rls`, pooler 6543), `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `DATABASE_URL` (rol `app_rls`, pooler 6543), `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `EMAIL_FROM` y, si quieres otro nombre de producto, `NEXT_PUBLIC_APP_NAME`.
    **No** definir `SUPABASE_SERVICE_ROLE_KEY` ni `DATABASE_URL_MIGRATE` (el deploy lo verifica y falla si existen: AC23).
 3. Crear un token (Account Settings → Tokens). Con `npx vercel link` obtener `VERCEL_ORG_ID` y `VERCEL_PROJECT_ID` (`.vercel/project.json`).
 

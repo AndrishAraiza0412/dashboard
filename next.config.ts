@@ -3,7 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  devIndicators: false,
   partialPrefetching: true,
+  experimental: {
+    // Going back to a view seen in the last 30 s is instant. Fresh data is still guaranteed: Server Actions
+    // revalidate, and LiveUpdates calls router.refresh() (which empties this cache) whenever the org changes.
+    staleTimes: { dynamic: 30 },
+  },
   async headers() {
     return [
       {

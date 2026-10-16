@@ -50,6 +50,34 @@
       "when": 1791996876343,
       "tag": "0006_normal_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792176707558,
+      "tag": "0007_purchases",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792176735998,
+      "tag": "0008_purchases_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792192190738,
+      "tag": "0009_fast_context_live_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792193079299,
+      "tag": "0010_purchases_module",
+      "breakpoints": true
     }
   ]
 }

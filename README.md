@@ -1,6 +1,6 @@
 # Dashboard — ventas e inventario multi-cliente
 
-SaaS multi-organización (Ventas + Inventario, módulos activables por cliente). UI en español (es-MX). MVP sin cobros.
+SaaS multi-organización (Inventario, Ventas y Compras, módulos activables por cliente; pantallas en vivo con Supabase Realtime). UI en español (es-MX). MVP sin cobros.
 
 **Stack:** Next.js 16 (App Router, Cache Components) · TypeScript estricto · Supabase (Postgres + Auth) · Drizzle · Tailwind v4 · TanStack Table · Recharts · Zod · Vitest · Playwright + axe.
 
@@ -36,4 +36,5 @@ npx next dev --webpack -p 3100
 
 - Despliegue y configuración: [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md)
 - Copias de seguridad: [`docs/runbooks/restore-backup.md`](docs/runbooks/restore-backup.md)
+- Dar de alta un cliente (y qué cambios piden código): [`docs/runbooks/new-client.md`](docs/runbooks/new-client.md)
 - Borrar una organización: [`docs/runbooks/delete-org.md`](docs/runbooks/delete-org.md)

@@ -15,7 +15,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export const metadata = { title: "Producto" };
 
-const REASONS = { restock: "Reposición", adjustment: "Ajuste", sale: "Venta", sale_cancel: "Venta cancelada" } as const;
+const REASONS = { restock: "Reposición", adjustment: "Ajuste", sale: "Venta", sale_cancel: "Venta cancelada", purchase: "Compra a proveedor" } as const;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ProductPage({ params }: PageProps<"/o/[orgSlug]/inventory/[productId]">) {

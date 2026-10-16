@@ -2,11 +2,11 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { and, eq, sql } from "drizzle-orm";
-import { memberships, organizations } from "@/db/schema";
+import { sql } from "drizzle-orm";
+import type { ModuleId } from "@/lib/modules";
 import { requireClaims } from "@/server/auth";
 import { db } from "./client";
-import { runAsUser, type Claims, type Tx } from "./rls";
+import { assertAuthenticated, runAsUser, type Claims, type Tx } from "./rls";
 
 export type Role = "admin" | "member" | "viewer";
 const RANK: Record<Role, number> = { viewer: 0, member: 1, admin: 2 };
@@ -35,80 +35,72 @@ export type OrgContext = {
   userId: string;
 };
 
-const membershipIn = async (tx: Tx, userId: string, slug: string, minRole: Role): Promise<OrgContext> => {
-  const [row] = await tx
-    .select({
-      orgId: organizations.id,
-      slug: organizations.slug,
-      name: organizations.name,
-      currency: organizations.currency,
-      timezone: organizations.timezone,
-      modules: organizations.enabledModules,
-      role: memberships.role,
-      userId: memberships.userId,
-    })
-    .from(organizations)
-    .innerJoin(memberships, eq(memberships.orgId, organizations.id))
-    .where(and(eq(organizations.slug, slug), eq(memberships.userId, userId)))
-    .limit(1);
-  if (!row) notFound();
-  if (RANK[row.role] < RANK[minRole]) throw new ForbiddenError();
-  return row;
-};
+type Membership = { slug: string; name: string; role: Role };
+type AppContext = { org: OrgContext | null; orgs: Membership[] };
+
+/**
+ * private.app_context (migration 0009) sets the verified claims and returns the membership for `slug` plus all of
+ * the user's organizations, in ONE statement (each statement through the pooler costs two round trips).
+ * Suspended organizations are invisible, as with RLS.
+ */
+const contextSql = (claims: Claims, slug: string | null) => sql`private.app_context(${JSON.stringify(claims)}, ${slug})`;
+
+/** No membership (or a suspended org) is a 404 so existence is not revealed; too low a role throws. */
+function checkRole(org: OrgContext | null, minRole: Role): OrgContext {
+  if (!org) notFound();
+  if (RANK[org.role] < RANK[minRole]) throw new ForbiddenError();
+  return org;
+}
+
+/** One read-only statement, no transaction: the definer function does not need the authenticated role. */
+const readContext = cache(async (slug: string | null): Promise<AppContext> => {
+  const claims = await requireClaims();
+  assertAuthenticated(claims);
+  const [row] = await db.execute<{ ctx: AppContext }>(sql`select ${contextSql(claims, slug)} as ctx`);
+  return row.ctx;
+});
 
 /**
  * Authorization for Server Actions and route handlers under /o/[orgSlug] (pages use loadOrg, which does the same
- * check inside the page's own transaction). The org id comes from the verified membership, never from client
- * input. No membership (or a suspended org) is a 404 so existence is not revealed; too low a role throws.
+ * check inside the page's own transaction). The org id comes from the verified membership, never from client input.
  */
 export const requireMembership = cache(
-  (slug: string, minRole: Role = "viewer"): Promise<OrgContext> => withUser((tx, claims) => membershipIn(tx, claims.sub, slug, minRole)),
+  async (slug: string, minRole: Role = "viewer"): Promise<OrgContext> => checkRole((await readContext(slug)).org, minRole),
 );
 
 /**
- * For pages: ONE transaction that checks the membership and then runs `fn` with the verified context, instead of a
- * membership transaction followed by a data transaction (each costs several round trips to the database).
+ * For pages: ONE transaction whose first statement sets the role and request id and checks the membership, then
+ * runs `fn` with the verified context under RLS.
  */
 export async function loadOrg<T>(
   slug: string,
   minRole: Role,
   fn: (tx: Tx, ctx: OrgContext) => Promise<T>,
 ): Promise<{ ctx: OrgContext; data: T }> {
-  return withUser(async (tx, claims) => {
-    const ctx = await membershipIn(tx, claims.sub, slug, minRole);
+  const claims = await requireClaims();
+  assertAuthenticated(claims);
+  const requestId = (await headers()).get("x-request-id") ?? "";
+  return db.transaction(async (tx) => {
+    const [row] = await tx.execute<{ ctx: AppContext }>(
+      sql`select set_config('role', 'authenticated', true), set_config('app.request_id', ${requestId}, true), ${contextSql(claims, slug)} as ctx`,
+    );
+    const ctx = checkRole(row.ctx.org, minRole);
     return { ctx, data: await fn(tx, ctx) };
   });
 }
 
-/** Everything the org layout needs, in one transaction (membership + the user's organizations). */
-export const getShell = cache((slug: string) =>
-  withUser(async (tx, claims) => {
-    const ctx = await membershipIn(tx, claims.sub, slug, "viewer");
-    const orgs = await tx
-      .select({ slug: organizations.slug, name: organizations.name })
-      .from(organizations)
-      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
-      .where(eq(memberships.userId, claims.sub))
-      .orderBy(organizations.name);
-    return { ctx, orgs };
-  }),
-);
+/** Everything the org layout needs (membership + the user's organizations), in one statement. */
+export const getShell = cache(async (slug: string) => {
+  const { org, orgs } = await readContext(slug);
+  return { ctx: checkRole(org, "viewer"), orgs };
+});
 
 /** For Server Actions of a module the organization has switched off. */
-export async function requireModule(ctx: OrgContext, module: "inventory" | "sales") {
+export async function requireModule(ctx: OrgContext, module: ModuleId) {
   if (!ctx.modules.includes(module)) notFound();
 }
 
-export const listMyOrgs = cache(() =>
-  withUser((tx, claims) =>
-    tx
-      .select({ slug: organizations.slug, name: organizations.name, role: memberships.role })
-      .from(organizations)
-      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
-      .where(eq(memberships.userId, claims.sub))
-      .orderBy(organizations.name),
-  ),
-);
+export const listMyOrgs = cache(async () => (await readContext(null)).orgs);
 
 /** Connectivity probe for /api/health: no user context, returns nothing but ok/error. */
 export async function pingDb(): Promise<boolean> {

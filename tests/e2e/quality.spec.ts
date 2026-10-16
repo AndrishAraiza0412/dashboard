@@ -78,7 +78,7 @@ async function audit(page: Page, path: string) {
 const PUBLIC = ["/login", "/forgot-password", "/reset-password", "/invite/qa-token"];
 const o = `/o/${org.slug}`;
 const AUTHED = [
-  o, `${o}/inventory`, `${o}/inventory/new`, `${o}/inventory/categories`, `${o}/sales`, `${o}/sales/customers`, `${o}/settings`, `${o}/activity`, "/admin",
+  o, `${o}/inventory`, `${o}/inventory/new`, `${o}/inventory/categories`, `${o}/sales`, `${o}/sales/customers`, `${o}/purchases`, `${o}/purchases/suppliers`, `${o}/settings`, `${o}/activity`, "/admin",
 ];
 
 for (const [label, size] of [["desktop", { width: 1280, height: 800 }], ["375px", { width: 375, height: 800 }]] as const) {

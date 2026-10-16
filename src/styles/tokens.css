@@ -1,5 +1,5 @@
 /* Design tokens derived from DESIGN.md (warm cream canvas, coral accent), adapted for dense data UI.
-   Light mode only in v1; dark tokens live in DESIGN.dashboard.md for v1.1. */
+   Light and dark themes, each with five accent palettes (see the end of this file). */
 :root {
   /* Surfaces */
   --canvas: #faf9f5;
@@ -25,7 +25,7 @@
   --primary-active: #864e3b;
   --primary-text: #965844;
   --primary-disabled: #e6dfd8;
-  --focus-ring: color-mix(in srgb, #cc785c 35%, transparent);
+  --focus-ring: color-mix(in srgb, var(--primary) 35%, transparent);
 
   /* Status (always paired with icon + label) */
   --success: #277640;
@@ -41,8 +41,10 @@
   --chart-3: #1ba37a;
   --chart-4: #e8a100;
   --chart-5: #6b4fc4;
-  --chart-grid: #e6dfd8;
+  --chart-grid: var(--hairline); /* follows the palette's surfaces */
   --chart-axis: #6a6863;
+  --bar-top: var(--chart-1);
+  --bar-bottom: var(--chart-1); /* the glass style fades bars out */
 
   /* Radius, spacing rhythm (8px grid) */
   --radius-md: 8px;
@@ -82,4 +84,83 @@
   --font-sans: var(--font-oswald), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-oswald), "Arial Narrow", ui-sans-serif, system-ui, sans-serif; /* titles use the same family */
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/* ---- Palettes (light). Set on <html data-palette>; coral is the default above. Each one tints the surfaces and recolors the charts.
+   Text tokens stay neutral and keep >= 4.5:1 on canvas, surface-soft and surface-card. Every --primary-strong carries white text at >= 4.5:1; --primary-text is >= 4.5:1 on --canvas.
+   chart-1 follows the accent; the series it displaced takes coral so the five stay distinct. */
+[data-palette="oceano"] {
+  --canvas: #f6f9fc; --surface-soft: #edf3f9; --surface-card: #e4edf6; --surface-strong: #d6e3f0; --hairline: #d9e3ee; --hairline-soft: #e3eaf2;
+  --primary: #4a8fd1; --primary-strong: #1f5f9e; --primary-hover: #1a5288; --primary-active: #164573; --primary-text: #1d5a96;
+  --chart-1: #2a78d6; --chart-2: #cf6a47;
+}
+[data-palette="bosque"] {
+  --canvas: #f6faf7; --surface-soft: #ecf4ee; --surface-card: #e2eee6; --surface-strong: #d3e5d9; --hairline: #d7e4db; --hairline-soft: #e2ece5;
+  --primary: #4f9a76; --primary-strong: #2f6b4f; --primary-hover: #285c44; --primary-active: #214d39; --primary-text: #2b6449;
+  --chart-1: #1ba37a; --chart-3: #cf6a47;
+}
+[data-palette="uva"] {
+  --canvas: #f9f7fd; --surface-soft: #f1edfa; --surface-card: #ece7f7; --surface-strong: #ddd4f0; --hairline: #e0d9ef; --hairline-soft: #e8e3f4;
+  --primary: #8a6fd6; --primary-strong: #6447b8; --primary-hover: #573da1; --primary-active: #4a338a; --primary-text: #5b41ad;
+  --chart-1: #6b4fc4; --chart-5: #cf6a47;
+}
+[data-palette="grafito"] {
+  --canvas: #f8f8f7; --surface-soft: #f0f0ee; --surface-card: #e8e8e5; --surface-strong: #dcdcd8; --hairline: #dfdfdb; --hairline-soft: #e7e7e4;
+  --primary: #6a6863; --primary-strong: #3d3d3a; --primary-hover: #2d2d2b; --primary-active: #1f1f1e; --primary-text: #3d3d3a;
+  --chart-1: #57534e;
+}
+
+/* ---- Dark theme (<html data-theme="dark">): warm charcoal surfaces, lighter accents with dark text on them.
+   The glass style (globals.css) builds on these tokens in both modes: its text always sits on a deep background. */
+:is([data-theme="dark"], [data-style="glass"]) {
+  --canvas: #1a1917;
+  --surface-soft: #201f1c;
+  --surface-card: #262522;
+  --surface-strong: #35332f;
+  --hairline: #36342f;
+  --hairline-soft: #2c2b27;
+
+  --ink: #f3f1ec;
+  --body: #d6d3cc;
+  --muted: #a6a39b;
+  --muted-soft: #7a776f;
+  --on-primary: #141413;
+
+  --primary: #d98468; --primary-strong: #e0906f; --primary-hover: #e8a084; --primary-active: #d27e5f; --primary-text: #eba085;
+  --primary-disabled: #36342f;
+
+  --success: #6cc68e;
+  --warning: #e3b44c;
+  --error: #f08585;
+  --success-bg: #1d3326;
+  --warning-bg: #3a3016;
+  --error-bg: #3f2323;
+
+  --chart-1: #e07a57;
+  --chart-2: #5b9be0;
+  --chart-3: #3cc18f;
+  --chart-4: #f0b429;
+  --chart-5: #9a82ec;
+  --chart-grid: var(--hairline); /* follows the palette's surfaces */
+  --chart-axis: #a6a39b;
+}
+:is([data-theme="dark"], [data-style="glass"])[data-palette="oceano"] {
+  --canvas: #151a20; --surface-soft: #1a2028; --surface-card: #202731; --surface-strong: #2c3541; --hairline: #2e3743; --hairline-soft: #242c36;
+  --primary: #5b9be0; --primary-strong: #6aa8e8; --primary-hover: #82b7ec; --primary-active: #5a99dc; --primary-text: #84b8ee;
+  --chart-1: #5b9be0; --chart-2: #e07a57;
+}
+:is([data-theme="dark"], [data-style="glass"])[data-palette="bosque"] {
+  --canvas: #151b17; --surface-soft: #1a211c; --surface-card: #202923; --surface-strong: #2b362e; --hairline: #2e3a31; --hairline-soft: #242e27;
+  --primary: #4fb080; --primary-strong: #5fbf8f; --primary-hover: #76caa0; --primary-active: #4fb080; --primary-text: #74cba0;
+  --chart-1: #3cc18f; --chart-3: #e07a57;
+}
+:is([data-theme="dark"], [data-style="glass"])[data-palette="uva"] {
+  --canvas: #19161f; --surface-soft: #1e1b26; --surface-card: #25212f; --surface-strong: #322d3f; --hairline: #352f42; --hairline-soft: #2a2536;
+  --primary: #9a82ec; --primary-strong: #a48cf0; --primary-hover: #b49ff3; --primary-active: #9478e8; --primary-text: #b5a1f5;
+  --chart-1: #9a82ec; --chart-5: #e07a57;
+}
+:is([data-theme="dark"], [data-style="glass"])[data-palette="grafito"] {
+  --canvas: #171717; --surface-soft: #1c1c1c; --surface-card: #232323; --surface-strong: #303030; --hairline: #333333; --hairline-soft: #292929;
+  --primary: #a6a39b; --primary-strong: #d6d3cc; --primary-hover: #e6e3dc; --primary-active: #c4c0b8; --primary-text: #e6e3dc;
+  --chart-1: #d6d3cc;
 }

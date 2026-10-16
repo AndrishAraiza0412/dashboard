@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { LiveUpdates } from "@/components/shell/live-updates";
 import { Sidebar } from "@/components/shell/sidebar";
+import { ThemePicker } from "@/components/shell/theme-picker";
 import { UserMenu } from "@/components/shell/user-menu";
 import { getShell } from "@/server/db/with-org";
 import { getClaims } from "@/server/auth";
@@ -22,12 +24,14 @@ async function Shell({ params, children }: { params: Promise<{ orgSlug: string }
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-20 focus:rounded-md focus:bg-canvas focus:px-4 focus:py-2 focus:text-ink">
         Saltar al contenido
       </a>
+      <LiveUpdates orgId={ctx.orgId} />
       <Sidebar ctx={ctx} orgs={orgs} />
       <div className="min-w-0 flex-1">
-        <div className="flex justify-end border-b border-hairline px-4 py-2 sm:px-6">
+        <div className="sticky top-0 z-20 flex items-center justify-end gap-1 border-b border-hairline bg-canvas/80 px-4 py-2 backdrop-blur-md sm:px-6">
+          <ThemePicker />
           <UserMenu email={claims?.email} />
         </div>
-        <main id="main" className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>
+        <main id="main" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
       </div>
     </div>
   );
