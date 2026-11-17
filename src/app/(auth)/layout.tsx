@@ -1,3 +1,4 @@
+// Shared layout of the auth pages: a centered card with the brand and the theme picker.
 import { ThemePicker } from "@/components/shell/theme-picker";
 import { BrandMark } from "@/components/ui/icons";
 import { APP_NAME } from "@/lib/brand";

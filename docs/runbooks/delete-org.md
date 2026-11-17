@@ -1,11 +1,11 @@
-# Borrar una organización
+# Deleting an organization
 
-Borrar una organización no se hace desde la app (v1): borra en cascada todos sus datos y no se puede deshacer. Se ejecuta a mano, con la conexión de migraciones (`DATABASE_URL_MIGRATE`, rol `postgres`), nunca con la de la app.
+Deleting an organization is not done from the app (v1): it cascades to all of its data and cannot be undone. It is run by hand, with the migrations connection (`DATABASE_URL_MIGRATE`, `postgres` role), never with the app's connection.
 
-## 1. Respaldo de esa organización
+## 1. Back up that organization
 
 ```bash
-# Sustituye <ORG_ID>. Guarda el archivo en un lugar privado (contiene datos de un cliente).
+# Replace <ORG_ID>. Store the file somewhere private (it contains a client's data).
 pg_dump "$DATABASE_URL_MIGRATE" --data-only --no-owner \
   --table=public.organizations --table=public.memberships --table=public.invitations \
   --table=public.categories --table=public.products --table=public.customers \
@@ -13,33 +13,33 @@ pg_dump "$DATABASE_URL_MIGRATE" --data-only --no-owner \
   --table=public.org_counters > org-<ORG_ID>-$(date +%F).sql
 ```
 
-`pg_dump` vuelca las tablas completas; si prefieres solo esa organización, exporta con `\copy (select ... where org_id = '<ORG_ID>') to ...` por tabla. Comprueba que el archivo no está vacío antes de seguir.
+`pg_dump` dumps whole tables; if you only want that organization, export with `\copy (select ... where org_id = '<ORG_ID>') to ...` per table. Check that the file is not empty before continuing.
 
-## 2. Borrado
+## 2. Deletion
 
 ```sql
 begin;
--- Evita que los triggers de auditoría escriban filas nuevas mientras se borra.
+-- Stops the audit triggers from writing new rows while deleting.
 set local app.deleting_org = '<ORG_ID>';
-delete from organizations where id = '<ORG_ID>';   -- cascada a todas las tablas con org_id
+delete from organizations where id = '<ORG_ID>';   -- cascades to every table with org_id
 commit;
 ```
 
-Después, `audit_log` conserva el rastro (no tiene FK a propósito). Si el cliente pide borrado total (RGPD o similar), elimina también esas filas:
+Afterwards, `audit_log` keeps the trail (it has no FK on purpose). If the client asks for total deletion (GDPR or similar), delete those rows too:
 
 ```sql
 delete from audit_log where org_id = '<ORG_ID>';
 ```
 
-## 3. Usuarios
+## 3. Users
 
-Borrar la organización no borra las cuentas de `auth.users`. Si alguien ya no pertenece a ninguna organización y quieres eliminar su cuenta, hazlo desde Supabase (Authentication → Users). Su perfil (`profiles`) se borra en cascada.
+Deleting the organization does not delete the `auth.users` accounts. If someone no longer belongs to any organization and you want to remove their account, do it from Supabase (Authentication → Users). Their profile (`profiles`) is deleted in cascade.
 
-## Comprobación
+## Verification
 
 ```sql
 select count(*) from organizations where id = '<ORG_ID>';          -- 0
 select count(*) from products where org_id = '<ORG_ID>';           -- 0
 ```
 
-Para suspender sin borrar, usa `/admin` → Suspender (conserva los datos).
+To suspend without deleting, use `/admin` → Suspend (data is kept).

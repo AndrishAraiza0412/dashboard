@@ -1,5 +1,6 @@
 "use client";
 
+// Client part of the /design page: a living style guide that renders the UI components (table, badges, dialogs, toasts) with sample data.
 import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";

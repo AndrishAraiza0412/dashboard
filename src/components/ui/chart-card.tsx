@@ -1,3 +1,4 @@
+// Card wrapper for a chart: title, optional description and footer.
 export function ChartCard({
   title,
   description,

@@ -1,3 +1,4 @@
+// Account menu in the top bar: shows the user's email and a sign-out action.
 import { Icon } from "@/components/ui/icons";
 import { signOut } from "@/server/actions/auth";
 

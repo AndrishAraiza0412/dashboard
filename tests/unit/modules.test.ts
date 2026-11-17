@@ -1,3 +1,4 @@
+// Tests for module dependency checks: Sales and Purchasing need Inventory enabled.
 import { describe, expect, it } from "vitest";
 import { missingDependency } from "@/lib/modules";
 

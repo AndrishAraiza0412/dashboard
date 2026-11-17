@@ -1,3 +1,4 @@
+// Product detail: edit its data, activate or deactivate it and adjust its stock (requires the inventory module).
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ProductFields } from "@/components/inventory/product-fields";

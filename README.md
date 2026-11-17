@@ -1,40 +1,40 @@
-# Dashboard — ventas e inventario multi-cliente
+# Dashboard — multi-client sales and inventory
 
-SaaS multi-organización (Inventario, Ventas y Compras, módulos activables por cliente; pantallas en vivo con Supabase Realtime). UI en español (es-MX). MVP sin cobros.
+Multi-organization SaaS (Inventory, Sales and Purchasing, with modules that can be enabled per client; live screens with Supabase Realtime). The UI is in Spanish (es-MX). MVP without billing.
 
-**Stack:** Next.js 16 (App Router, Cache Components) · TypeScript estricto · Supabase (Postgres + Auth) · Drizzle · Tailwind v4 · TanStack Table · Recharts · Zod · Vitest · Playwright + axe.
+**Stack:** Next.js 16 (App Router, Cache Components) · strict TypeScript · Supabase (Postgres + Auth) · Drizzle · Tailwind v4 · TanStack Table · Recharts · Zod · Vitest · Playwright + axe.
 
-## Cómo está pensado
+## How it is designed
 
-- **Aislamiento entre clientes en la base de datos.** La app se conecta como `app_rls` (sin `BYPASSRLS`) y cada petición corre dentro de `withOrg()`: `set local role authenticated` más las claims verificadas con `getClaims()`. Si una consulta se olvida de `withOrg`, devuelve 0 filas, no datos de otro cliente. No existe ninguna credencial con bypass en producción.
-- **Lo sensible vive en Postgres.** Stock, numeración y totales de pedidos, roles, invitaciones y administración de plataforma son funciones `security definer` o triggers; los grants son por columna.
-- **Autorización en cada frontera.** Cada página, Server Action y route handler llama a `requireMembership(slug, rol)`; el layout no es una frontera de seguridad.
-- Diseño y contraste: [`docs/design.md`](docs/design.md).
+- **Client isolation in the database.** The app connects as `app_rls` (without `BYPASSRLS`) and every request runs inside `withOrg()`: `set local role authenticated` plus the claims verified with `getClaims()`. If a query forgets `withOrg`, it returns 0 rows, not another client's data. There is no bypass credential in production.
+- **Anything sensitive lives in Postgres.** Stock, order numbering and totals, roles, invitations and platform administration are `security definer` functions or triggers; grants are per column.
+- **Authorization at every boundary.** Every page, Server Action and route handler calls `requireMembership(slug, role)`; the layout is not a security boundary.
+- Design and contrast: [`docs/design.md`](docs/design.md).
 
-## Puesta en marcha
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local        # rellena con tu proyecto Supabase de desarrollo
-npm run db:migrate                # aplica drizzle/*.sql (DATABASE_URL_MIGRATE)
-node scripts/db-setup-role.ts     # fija la contraseña de app_rls desde DATABASE_URL
-node scripts/seed.ts --yes        # opcional: organización demo con datos de ejemplo
+cp .env.example .env.local        # fill in with your development Supabase project
+npm run db:migrate                # applies drizzle/*.sql (DATABASE_URL_MIGRATE)
+node scripts/db-setup-role.ts     # sets the app_rls password from DATABASE_URL
+node scripts/seed.ts --yes        # optional: demo organization with sample data
 npx next dev --webpack -p 3100
 ```
 
-## Comandos
+## Commands
 
 | | |
 |---|---|
-| `npm run lint` / `npm run typecheck` | ESLint / tipos |
-| `npm test` | Pruebas de integración contra Postgres real (aislamiento, permisos, stock, KPIs) |
-| `npx playwright test` | E2E con axe, 375 px y teclado (levanta su propio servidor) |
-| `npx next build --webpack` | Build de producción |
-| `node scripts/seed.ts --yes \| --clean` | Crear / quitar la organización demo |
+| `npm run lint` / `npm run typecheck` | ESLint / types |
+| `npm test` | Integration tests against real Postgres (isolation, permissions, stock, KPIs) |
+| `npx playwright test` | E2E with axe, 375 px and keyboard (starts its own server) |
+| `npx next build --webpack` | Production build |
+| `node scripts/seed.ts --yes \| --clean` | Create / remove the demo organization |
 
-## Operación
+## Operations
 
-- Despliegue y configuración: [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md)
-- Copias de seguridad: [`docs/runbooks/restore-backup.md`](docs/runbooks/restore-backup.md)
-- Dar de alta un cliente (y qué cambios piden código): [`docs/runbooks/new-client.md`](docs/runbooks/new-client.md)
-- Borrar una organización: [`docs/runbooks/delete-org.md`](docs/runbooks/delete-org.md)
+- Deployment and configuration: [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md)
+- Backups: [`docs/runbooks/restore-backup.md`](docs/runbooks/restore-backup.md)
+- Onboarding a client (and which changes require code): [`docs/runbooks/new-client.md`](docs/runbooks/new-client.md)
+- Deleting an organization: [`docs/runbooks/delete-org.md`](docs/runbooks/delete-org.md)

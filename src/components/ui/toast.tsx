@@ -1,5 +1,6 @@
 "use client";
 
+// Toast notifications: a provider and a useToast hook; messages disappear after 5 seconds.
 import { createContext, useCallback, useContext, useState } from "react";
 import { cn } from "@/lib/cn";
 

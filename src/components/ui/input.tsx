@@ -1,3 +1,4 @@
+// Form field components: a labelled input and select that share the focus and border styles.
 import { cn } from "@/lib/cn";
 
 export function Field({

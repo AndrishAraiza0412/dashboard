@@ -1,4 +1,4 @@
-# Diseño del dashboard
+# Dashboard design
 
 Warm cream canvas and coral accent, adapted for a dense, data-first dashboard.
 Source of truth for values: `src/styles/tokens.css`. If this file and the CSS disagree, the CSS wins.

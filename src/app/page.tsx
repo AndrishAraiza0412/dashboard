@@ -1,3 +1,4 @@
+// Home: redirects to the sign-in page, or to the user's first organization; shows an empty state when they belong to none.
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";

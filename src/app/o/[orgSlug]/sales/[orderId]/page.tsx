@@ -1,3 +1,4 @@
+// Sales order detail: edit its header and lines, confirm, fulfill or cancel it (requires the sales module).
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ActionForm } from "@/components/ui/action-form";

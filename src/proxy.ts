@@ -1,3 +1,4 @@
+// Next.js proxy (the former middleware): refreshes the Supabase session on every request except static assets.
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 

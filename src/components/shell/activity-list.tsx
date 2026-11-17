@@ -1,3 +1,4 @@
+// Audit-log entries as a readable list: who did what to which record, which fields changed and when (in the organization's time zone).
 import { actionVerb, changedFields, entityLabel, subject } from "@/lib/activity-text";
 import { dateTime } from "@/lib/format";
 

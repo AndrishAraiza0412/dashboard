@@ -1,3 +1,4 @@
+// New product form (the opening stock is recorded afterwards with a stock adjustment).
 import { Suspense } from "react";
 import { ProductFields } from "@/components/inventory/product-fields";
 import { ActionForm } from "@/components/ui/action-form";

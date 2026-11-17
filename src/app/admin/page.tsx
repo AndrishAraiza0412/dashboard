@@ -1,3 +1,4 @@
+// Platform administration: lists organizations, creates new ones, enables their modules and suspends or reactivates them.
 import Link from "next/link";
 import { Suspense } from "react";
 import { ActionForm } from "@/components/ui/action-form";

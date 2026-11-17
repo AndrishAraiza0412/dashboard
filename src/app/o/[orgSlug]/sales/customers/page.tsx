@@ -1,3 +1,4 @@
+// Customers: create, edit and activate or deactivate (requires the sales module).
 import { Suspense } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { Badge } from "@/components/ui/badge";

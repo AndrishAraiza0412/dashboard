@@ -1,3 +1,4 @@
+// Button with the design system's variants (primary, secondary, ghost, danger).
 import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "dangerOutline";

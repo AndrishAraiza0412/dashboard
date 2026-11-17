@@ -1,3 +1,4 @@
+// Suppliers: create, edit and activate or deactivate (requires the purchases module).
 import Link from "next/link";
 import { Suspense } from "react";
 import { ActionForm } from "@/components/ui/action-form";

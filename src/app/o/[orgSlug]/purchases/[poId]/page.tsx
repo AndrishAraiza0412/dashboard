@@ -1,3 +1,4 @@
+// Purchase order detail: edit its header and lines, place, receive or cancel it (requires the purchases module).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";

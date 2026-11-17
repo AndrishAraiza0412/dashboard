@@ -1,5 +1,6 @@
 "use client";
 
+// Generic auth form: renders its fields, submits a server action through useActionState and shows the error or message it returns.
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/input";

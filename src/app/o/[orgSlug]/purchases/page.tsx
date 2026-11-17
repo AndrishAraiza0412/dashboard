@@ -1,3 +1,4 @@
+// Purchase orders list, with creation of a new order or a restock order (requires the purchases module).
 import Link from "next/link";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";

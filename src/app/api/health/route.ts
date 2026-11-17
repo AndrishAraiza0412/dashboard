@@ -1,3 +1,4 @@
+// Health check: 200 if the app can reach the database, 503 otherwise (used by the deploy smoke test).
 import { connection } from "next/server";
 import { pingDb } from "@/server/db/with-org";
 

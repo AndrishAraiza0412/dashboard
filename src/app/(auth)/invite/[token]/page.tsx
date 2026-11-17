@@ -1,3 +1,4 @@
+// Invitation page opened from the emailed link: a signed-in user accepts the invitation, otherwise they sign up with it.
 import { Suspense } from "react";
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/auth-form";

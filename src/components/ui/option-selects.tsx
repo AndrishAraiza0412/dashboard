@@ -1,3 +1,4 @@
+// Grouped selects for currency and time zone; the saved value is kept even when it is not in the list.
 import { SelectField } from "@/components/ui/input";
 import { currencyGroups, timezoneGroups, withCurrent, type Group } from "@/lib/options";
 

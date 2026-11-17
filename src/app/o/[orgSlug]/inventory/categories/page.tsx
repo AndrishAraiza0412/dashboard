@@ -1,3 +1,4 @@
+// Product categories: create, rename and delete (a category can only be deleted when it has no products).
 import { Suspense } from "react";
 import { DeleteCategoryButton } from "@/components/inventory/delete-category-button";
 import { ActionForm } from "@/components/ui/action-form";

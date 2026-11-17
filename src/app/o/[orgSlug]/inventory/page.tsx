@@ -1,3 +1,4 @@
+// Inventory list: products and their stock, driven by search parameters (requires the inventory module).
 import Link from "next/link";
 import { Suspense } from "react";
 import { ProductsTable } from "@/components/inventory/products-table";

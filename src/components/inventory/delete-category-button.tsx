@@ -1,5 +1,6 @@
 "use client";
 
+// Delete button with a confirmation dialog; shows the error returned by the server action (for example, when the category still has products).
 import { useState } from "react";
 import type { FormState } from "@/components/auth/auth-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

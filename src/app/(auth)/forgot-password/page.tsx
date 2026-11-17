@@ -1,3 +1,4 @@
+// Forgot-password page: asks for an email and sends a reset link.
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/auth-form";
 import { forgotPassword } from "@/server/actions/auth";

@@ -1,3 +1,4 @@
+// Tests for the error log line: a single JSON object with request id, route template and a code, never the error message.
 import { describe, expect, it } from "vitest";
 import { formatError } from "@/server/log";
 

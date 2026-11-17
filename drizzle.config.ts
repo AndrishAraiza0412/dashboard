@@ -1,3 +1,4 @@
+// Drizzle Kit config: generates SQL migrations into ./drizzle from src/db/schema.ts, connecting with the migrations URL (DATABASE_URL_MIGRATE).
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 

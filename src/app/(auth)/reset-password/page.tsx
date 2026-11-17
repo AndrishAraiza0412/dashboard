@@ -1,3 +1,4 @@
+// Reset-password page: sets a new password after following the emailed recovery link.
 import { AuthForm } from "@/components/auth/auth-form";
 import { resetPassword } from "@/server/actions/auth";
 

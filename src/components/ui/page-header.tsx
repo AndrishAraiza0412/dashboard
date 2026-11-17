@@ -1,3 +1,4 @@
+// Page header: title, optional description and actions area.
 export function PageHeader({
   title,
   description,

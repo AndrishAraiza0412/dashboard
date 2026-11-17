@@ -1,3 +1,4 @@
+// Sales orders list, with creation of a new order (requires the sales module).
 import Link from "next/link";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";

@@ -1,3 +1,4 @@
+// Tests for the audit-log text helpers: Spanish field names, the record's subject and fallbacks for unknown values.
 import { describe, expect, it } from "vitest";
 import { actionVerb, changedFields, entityLabel, subject } from "@/lib/activity-text";
 

@@ -1,3 +1,4 @@
+// Organization settings: organization data, members and roles, invitations, and leaving the organization.
 import { Suspense } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { Badge } from "@/components/ui/badge";

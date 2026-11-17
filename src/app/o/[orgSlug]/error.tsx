@@ -1,5 +1,6 @@
 "use client";
 
+// Error boundary for organization pages: a permission message when the server rejects with "forbidden", a retry button otherwise.
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 

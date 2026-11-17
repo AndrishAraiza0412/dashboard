@@ -1,3 +1,4 @@
+// Empty state: icon, title, optional description and action.
 import { Icon } from "@/components/ui/icons";
 
 export function EmptyState({
